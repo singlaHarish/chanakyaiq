@@ -1,10 +1,12 @@
-package com.chanakyaiq.service;
+package com.chanakyaiq.service.impl;
 
 import com.chanakyaiq.model.Holding;
 import com.chanakyaiq.model.User;
 import com.chanakyaiq.repository.HoldingRepository;
 import com.chanakyaiq.repository.UserRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.chanakyaiq.service.api.PortfolioService;
+import com.chanakyaiq.service.api.UpstoxService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -14,18 +16,19 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Implementation of the {@link PortfolioService} interface.
+ * Provides aggregation of a user's portfolio data.
+ */
 @Service
-public class PortfolioService {
+@RequiredArgsConstructor
+public class PortfolioServiceImpl implements PortfolioService {
 
-    @Autowired
-    private HoldingRepository holdingRepository;
+    private final HoldingRepository holdingRepository;
+    private final UserRepository userRepository;
+    private final UpstoxService upstoxService;
 
-    @Autowired
-    private UserRepository userRepository;
-
-    @Autowired
-    private UpstoxService upstoxService;
-
+    @Override
     public Map<String, Object> getPortfolioSummary(String userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
@@ -47,7 +50,8 @@ public class PortfolioService {
             BigDecimal profitLoss = currentValue.subtract(costBasis);
             BigDecimal profitLossPercent = BigDecimal.ZERO;
             if (costBasis.compareTo(BigDecimal.ZERO) > 0) {
-                profitLossPercent = profitLoss.divide(costBasis, 4, RoundingMode.HALF_UP).multiply(new BigDecimal("100"));
+                profitLossPercent = profitLoss.divide(costBasis, 4, RoundingMode.HALF_UP)
+                        .multiply(new BigDecimal("100"));
             }
 
             Map<String, Object> detail = new HashMap<>();
@@ -66,7 +70,8 @@ public class PortfolioService {
         BigDecimal overallProfitLoss = totalCurrentValue.subtract(totalInvested);
         BigDecimal overallProfitLossPercent = BigDecimal.ZERO;
         if (totalInvested.compareTo(BigDecimal.ZERO) > 0) {
-            overallProfitLossPercent = overallProfitLoss.divide(totalInvested, 4, RoundingMode.HALF_UP).multiply(new BigDecimal("100"));
+            overallProfitLossPercent = overallProfitLoss.divide(totalInvested, 4, RoundingMode.HALF_UP)
+                    .multiply(new BigDecimal("100"));
         }
 
         BigDecimal totalPortfolioValue = totalCurrentValue.add(user.getCashBalance());

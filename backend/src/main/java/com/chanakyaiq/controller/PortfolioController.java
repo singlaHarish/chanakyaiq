@@ -2,7 +2,7 @@ package com.chanakyaiq.controller;
 
 import com.chanakyaiq.model.Transaction;
 import com.chanakyaiq.repository.TransactionRepository;
-import com.chanakyaiq.service.PortfolioService;
+import com.chanakyaiq.service.api.PortfolioService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;

@@ -1,4 +1,4 @@
-package com.chanakyaiq.service;
+package com.chanakyaiq.service.impl;
 
 import com.chanakyaiq.model.Holding;
 import com.chanakyaiq.model.Transaction;
@@ -6,7 +6,9 @@ import com.chanakyaiq.model.User;
 import com.chanakyaiq.repository.HoldingRepository;
 import com.chanakyaiq.repository.TransactionRepository;
 import com.chanakyaiq.repository.UserRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.chanakyaiq.service.api.TradeService;
+import com.chanakyaiq.service.api.UpstoxService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -15,41 +17,35 @@ import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.Optional;
 
+/**
+ * Implementation of the {@link TradeService} interface.
+ * Provides business logic for executing BUY and SELL orders.
+ */
 @Service
-public class TradeService {
+@RequiredArgsConstructor
+public class TradeServiceImpl implements TradeService {
 
-    @Autowired
-    private UserRepository userRepository;
-
-    @Autowired
-    private HoldingRepository holdingRepository;
-
-    @Autowired
-    private TransactionRepository transactionRepository;
-
-    @Autowired
-    private UpstoxService upstoxService;
+    private final UserRepository userRepository;
+    private final HoldingRepository holdingRepository;
+    private final TransactionRepository transactionRepository;
+    private final UpstoxService upstoxService;
 
     @Transactional
+    @Override
     public void executeBuyOrder(String userId, String symbol, int quantity) {
         if (quantity <= 0) {
             throw new IllegalArgumentException("Quantity must be greater than zero");
         }
-
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
-
         BigDecimal price = upstoxService.getStockPrice(symbol);
         BigDecimal totalCost = price.multiply(BigDecimal.valueOf(quantity));
-
         if (user.getCashBalance().compareTo(totalCost) < 0) {
             throw new IllegalStateException("Insufficient funds. Required: ₹" + totalCost + ", Available: ₹" + user.getCashBalance());
         }
-
         // Deduct cash balance
         user.setCashBalance(user.getCashBalance().subtract(totalCost));
         userRepository.save(user);
-
         // Update holdings
         Optional<Holding> existingHoldingOpt = holdingRepository.findByUserIdAndSymbol(userId, symbol.toUpperCase());
         if (existingHoldingOpt.isPresent()) {
@@ -69,7 +65,6 @@ public class TradeService {
                     .build();
             holdingRepository.save(newHolding);
         }
-
         // Log transaction
         Transaction transaction = Transaction.builder()
                 .userId(userId)
@@ -83,28 +78,23 @@ public class TradeService {
     }
 
     @Transactional
+    @Override
     public void executeSellOrder(String userId, String symbol, int quantity) {
         if (quantity <= 0) {
             throw new IllegalArgumentException("Quantity must be greater than zero");
         }
-
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
-
         Holding holding = holdingRepository.findByUserIdAndSymbol(userId, symbol.toUpperCase())
                 .orElseThrow(() -> new IllegalArgumentException("You do not own any shares of " + symbol));
-
         if (holding.getQuantity() < quantity) {
             throw new IllegalStateException("Insufficient shares to sell. Available: " + holding.getQuantity() + ", Requested: " + quantity);
         }
-
         BigDecimal price = upstoxService.getStockPrice(symbol);
         BigDecimal totalProceeds = price.multiply(BigDecimal.valueOf(quantity));
-
         // Add proceeds to cash balance
         user.setCashBalance(user.getCashBalance().add(totalProceeds));
         userRepository.save(user);
-
         // Update holdings
         int remainingQty = holding.getQuantity() - quantity;
         if (remainingQty == 0) {
@@ -113,7 +103,6 @@ public class TradeService {
             holding.setQuantity(remainingQty);
             holdingRepository.save(holding);
         }
-
         // Log transaction
         Transaction transaction = Transaction.builder()
                 .userId(userId)
