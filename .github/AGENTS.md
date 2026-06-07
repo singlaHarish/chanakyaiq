@@ -466,7 +466,7 @@ mvnw.cmd test
 ## Contact & Contribution
 
 ### Project Maintainers
-- Developer: Admin (local development)
+- Developer: Harish Singla
 
 ### Contributing Guidelines
 1. Fork the repository
