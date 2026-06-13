@@ -106,6 +106,21 @@ chanakyaiq/
 
 ---
 
+## Coding Standards
+
+### Backend (Java/Spring Boot)
+- **Interface-Driven Design**: Services must be separated into `api` (interfaces) and `impl` (implementations) packages (e.g., `TradeService` and `TradeServiceImpl`).
+- **Dependency Injection**: Prioritize constructor-based injection (e.g., using `@RequiredArgsConstructor` from Lombok) for required dependencies.
+- **Boilerplate Reduction**: Extensively use Lombok (`@Data`, `@Builder`, `@NoArgsConstructor`, `@AllArgsConstructor`) for entities and data transfer objects.
+- **Documentation**: Use Javadoc on interfaces to define business contracts and clarify complex logic.
+
+### Frontend (React/TypeScript)
+- **Component Style**: Use Functional Components with React Hooks (`useState`, `useEffect`, etc.).
+- **Type Safety**: Enforce strict TypeScript typing via defined interfaces (e.g., `Holding`, `Transaction` in `types.ts`). Note: Some legacy components might be `.jsx`, but new ones should be `.tsx`.
+- **Design System**: Adhere to the established dark-mode glass-morphism aesthetic. Use unified styling rather than scattered inline styles.
+
+---
+
 ## Key Features & Flows
 
 ### 1. Authentication Flow
