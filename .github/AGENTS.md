@@ -1,5 +1,8 @@
 # AGENTS.md - ChanakyaIQ Project Context
 
+> **📚 Additional Documentation:**
+> - [OAuth2 Authentication Flow](./OAUTH2-FLOW.md) - Detailed explanation of Google OAuth2 implementation
+
 ## Project Overview
 
 **ChanakyaIQ** is a premium fintech stock simulator application for the Indian stock market. It allows users to practice trading without real capital risk using virtual money (₹10,00,000 starting balance).
@@ -129,6 +132,8 @@ chanakyaiq/
 - After successful authentication, redirected back to `http://localhost:5173/`
 - Session stored as `JSESSIONID` cookie (httpOnly, secure in production)
 - User auto-provisioned on first login with ₹10,00,000 virtual cash
+
+> **📖 Detailed Documentation:** See [OAUTH2-FLOW.md](./OAUTH2-FLOW.md) for complete flow diagrams, step-by-step process, security features, and troubleshooting guide.
 
 ### 2. Portfolio Management
 - **Holdings**: Tracks user's stock positions (symbol, quantity, average price)
@@ -292,6 +297,8 @@ npm run build
 
 ## Security Configuration
 
+> **🔐 Deep Dive:** For complete OAuth2 authentication flow with diagrams, see [OAUTH2-FLOW.md](./OAUTH2-FLOW.md)
+
 ### CORS Settings
 - **Allowed Origin**: `http://localhost:5173` (frontend dev server)
 - **Allowed Methods**: GET, POST, PUT, DELETE, OPTIONS
@@ -309,6 +316,14 @@ npm run build
 - Success redirect: `http://localhost:5173/`
 - Session-based (JSESSIONID cookie)
 - Logout: `/api/auth/logout`
+- **Auto-provisioning**: New users get ₹10,00,000 starting balance
+- **Session Management**: Server-side sessions (in-memory by default)
+
+**Key Security Features:**
+- HttpOnly cookies (prevents XSS attacks)
+- CSRF protection (disabled for REST API)
+- Credential-based CORS (allows cross-origin cookie sharing)
+- Google-managed authentication (no password storage)
 
 ---
 
@@ -478,6 +493,41 @@ mvnw.cmd test
 
 ---
 
+## 📚 Documentation Index
+
+This file provides the complete project context. For specialized topics, refer to these detailed guides:
+
+### Core Documentation
+- **[AGENTS.md](./AGENTS.md)** _(this file)_ - Complete project overview, architecture, and development guide
+- **[OAUTH2-FLOW.md](./OAUTH2-FLOW.md)** - Detailed OAuth2 authentication flow with diagrams
+
+### Quick References
+| Topic | Location | Description |
+|-------|----------|-------------|
+| Authentication Flow | [OAUTH2-FLOW.md](./OAUTH2-FLOW.md) | Step-by-step OAuth2 flow, security features, troubleshooting |
+| API Endpoints | [Above](#api-endpoints) | Complete REST API reference |
+| Database Schema | [Above](#database-schema) | Table structures and relationships |
+| Security Config | [Above](#security-configuration) | CORS, protected routes, session management |
+| Business Logic | [Above](#business-logic-highlights) | Trade execution, portfolio calculations, market simulation |
+| Development Setup | [Above](#development-workflow) | Running, building, and testing the application |
+| Troubleshooting | [Above](#troubleshooting) | Common issues and solutions |
+
+### Configuration Files
+- `.env` - Environment variables (Google OAuth2 credentials, API tokens)
+- `application.properties` - Spring Boot configuration
+- `SecurityConfig.java` - Security and OAuth2 setup
+- `package.json` - Frontend dependencies and scripts
+- `pom.xml` - Backend Maven dependencies
+
+### Key Concepts
+1. **Session-Based Auth**: Uses JSESSIONID cookies, not JWT tokens ([details](./OAUTH2-FLOW.md#session-management))
+2. **Auto-Provisioning**: New users automatically created with ₹10L balance ([details](#1-authentication-flow))
+3. **Mock Market Data**: In-memory price simulation with IST market hours ([details](#4-mock-market-data-upstoxservice))
+4. **Weighted Average**: Holdings use weighted average price on buy ([details](#trade-execution-tradeserviceimpl))
+5. **Real-time Updates**: Frontend polls portfolio data every 5 seconds ([details](#real-time-updates))
+
+---
+
 ## Contact & Contribution
 
 ### Project Maintainers
@@ -497,6 +547,6 @@ MIT License - See project README for details
 
 ---
 
-**Last Updated**: June 7, 2026
+**Last Updated**: June 13, 2026
 **Project Version**: 0.0.1-SNAPSHOT
 **Status**: Active Development

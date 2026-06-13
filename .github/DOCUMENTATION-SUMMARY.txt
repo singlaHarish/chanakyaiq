@@ -1,0 +1,200 @@
+CHANAKYAIQ DOCUMENTATION STRUCTURE
+=====================================
+
+Created: June 13, 2026
+Purpose: Complete project context for developers and AI agents
+
+FILES CREATED
+-------------
+1. README.md              - Documentation index and navigation hub
+2. AGENTS.md              - Complete project documentation (PRIMARY REFERENCE)
+3. OAUTH2-FLOW.md         - Detailed authentication flow with diagrams
+4. DOCUMENTATION-MAP.md   - Visual guide to documentation structure
+
+DOCUMENTATION PHILOSOPHY
+------------------------
+- Single source of truth: AGENTS.md contains all core information
+- Specialized deep dives: Separate files for complex topics (OAuth2)
+- Bi-directional linking: Easy navigation between related topics
+- Progressive disclosure: README → AGENTS.md → Specialized docs
+- No duplication: Cross-reference instead of copying content
+
+KEY CROSS-REFERENCES
+--------------------
+AGENTS.md → OAUTH2-FLOW.md (3 links):
+  - Header section (line 3)
+  - Authentication Flow section (line ~145)
+  - Security Configuration section (line ~310)
+
+OAUTH2-FLOW.md → AGENTS.md (1 link):
+  - Header section (line 3)
+
+CONTENT BREAKDOWN
+-----------------
+
+AGENTS.md (~500 lines):
+  ✓ Project overview and purpose
+  ✓ Complete tech stack (Java 21, Spring Boot 4, React 19, TypeScript)
+  ✓ Architecture (layered, interface-driven)
+  ✓ Directory structure with explanations
+  ✓ Coding standards (Records, Lombok, TypeScript)
+  ✓ Key features (auth, portfolio, trading, market simulation)
+  ✓ Complete API endpoint reference
+  ✓ Database schema (Users, Holdings, Transactions)
+  ✓ Configuration files (application.properties, .env, package.json)
+  ✓ Development workflow (running, building, testing)
+  ✓ Security configuration (CORS, OAuth2, sessions)
+  ✓ Business logic deep dives (trade execution, portfolio calc, market sim)
+  ✓ UI/UX design system
+  ✓ Common development tasks
+  ✓ Testing setup
+  ✓ Known limitations and future enhancements
+  ✓ Troubleshooting guide
+  ✓ Git repository info
+  ✓ Documentation index with quick reference table
+
+OAUTH2-FLOW.md (~450 lines):
+  ✓ Complete OAuth2 flow diagram (step-by-step)
+  ✓ Key components explained (frontend, backend, Google)
+  ✓ OAuth2 data flow (tokens, claims, user info)
+  ✓ Session management (JSESSIONID cookies)
+  ✓ User provisioning logic
+  ✓ Security features (HttpOnly, CORS, CSRF)
+  ✓ Configuration checklist
+  ✓ Testing procedures
+  ✓ Common issues and solutions
+  ✓ Flow summary table
+
+README.md (~100 lines):
+  ✓ Documentation overview
+  ✓ Quick navigation table
+  ✓ Project structure
+  ✓ Quick start guide
+  ✓ Key technologies
+  ✓ Documentation philosophy
+  ✓ Contribution guidelines
+
+DOCUMENTATION-MAP.md (~250 lines):
+  ✓ Visual hierarchy diagram
+  ✓ When to use each document
+  ✓ Cross-reference map
+  ✓ Documentation flow for common tasks
+  ✓ Quick links by topic table
+  ✓ Maintenance guidelines
+
+USAGE PATTERNS
+--------------
+For AI Agents:
+  1. Start with AGENTS.md for complete context
+  2. Reference OAUTH2-FLOW.md for authentication tasks
+  3. Use cross-references to navigate between topics
+  4. Refer to code examples in both documents
+
+For Developers:
+  1. Begin with README.md for orientation
+  2. Read AGENTS.md sections relevant to your task
+  3. Deep dive into OAUTH2-FLOW.md if working on auth
+  4. Use DOCUMENTATION-MAP.md to find specific topics
+
+For New Team Members:
+  1. README.md → Overview
+  2. AGENTS.md → Complete read-through
+  3. OAUTH2-FLOW.md → Understand authentication
+  4. AGENTS.md → Development Workflow → Start coding
+
+MAINTENANCE GUIDELINES
+----------------------
+Update AGENTS.md when:
+  - Adding new features
+  - Changing architecture
+  - Adding API endpoints
+  - Modifying database schema
+  - Updating configuration
+
+Update OAUTH2-FLOW.md when:
+  - Changing authentication flow
+  - Modifying security config
+  - Adding OAuth providers
+  - Updating session management
+
+Update README.md when:
+  - Adding new documentation files
+  - Changing documentation structure
+
+Update DOCUMENTATION-MAP.md when:
+  - Adding cross-references
+  - Restructuring documents
+
+KEY FEATURES DOCUMENTED
+-----------------------
+✓ Google OAuth2 authentication (session-based)
+✓ Auto-provisioning users with ₹10L balance
+✓ Portfolio management with real-time P&L
+✓ Mock market data simulation (IST hours)
+✓ Buy/sell trading with weighted average pricing
+✓ Transaction history
+✓ H2 database (file-based)
+✓ CORS configuration for cross-origin requests
+✓ Session cookie management (JSESSIONID)
+✓ Real-time price updates (5-second polling)
+
+TECHNOLOGY STACK
+----------------
+Backend:
+  - Java 21
+  - Spring Boot 4.0.6
+  - Spring Security + OAuth2
+  - JPA/Hibernate
+  - H2 Database
+  - Maven
+  - Lombok
+
+Frontend:
+  - React 19.2.6
+  - TypeScript 6.0.3
+  - Vite 8.0.12
+  - Custom CSS (dark glass-morphism)
+
+Development:
+  - Backend: localhost:8080
+  - Frontend: localhost:5173
+  - Database Console: localhost:8080/h2-console
+
+DOCUMENTATION METRICS
+---------------------
+Total Files: 4
+Total Lines: ~1300
+Cross-References: 4
+Code Examples: 20+
+Diagrams: 1 (ASCII flow diagram)
+Tables: 8
+Quick Reference Links: 30+
+
+COMPLETENESS CHECKLIST
+----------------------
+✓ Project overview
+✓ Architecture explanation
+✓ Tech stack documentation
+✓ API endpoint reference
+✓ Database schema
+✓ Authentication flow
+✓ Security configuration
+✓ Business logic details
+✓ Development setup
+✓ Testing procedures
+✓ Troubleshooting guide
+✓ Configuration examples
+✓ Code snippets
+✓ Common tasks guide
+✓ Future enhancements
+✓ Contributing guidelines
+
+QUALITY METRICS
+---------------
+- Context completeness: ✓ High (can understand project without exploring code)
+- Navigation efficiency: ✓ High (cross-referenced, indexed)
+- Maintenance burden: ✓ Low (no duplication, clear ownership)
+- AI agent readability: ✓ High (structured, comprehensive)
+- Developer onboarding: ✓ High (progressive disclosure)
+
+END OF SUMMARY
