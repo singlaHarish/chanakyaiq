@@ -1,6 +1,7 @@
 package com.chanakyaiq.dto;
 
 public record StockSearchResponseDTO(
-        String symbol, // Will hold the instrument_key
+        String instrumentKey,
+        String tradingSymbol,
         String name
 ) {}

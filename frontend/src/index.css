@@ -215,7 +215,7 @@ body {
 
 .app-content {
   display: grid;
-  grid-template-columns: 2fr 1fr;
+  grid-template-columns: 1fr 1.5fr;
   gap: 24px;
 }
 
@@ -457,7 +457,8 @@ body {
 
 .search-item {
   display: grid;
-  grid-template-columns: 2fr 3fr 2fr;
+  grid-template-columns: 1fr 2fr;
+  gap: 12px;
   padding: 12px 16px;
   cursor: pointer;
   transition: background-color 0.15s;

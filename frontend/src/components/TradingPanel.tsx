@@ -131,14 +131,14 @@ export default function TradingPanel({ onTradeSuccess, selectedSymbol, clearSele
             <div className="search-results">
               {searchResults.map((stock) => (
                 <div
-                  key={stock.symbol}
+                  key={stock.tradingSymbol}
                   className="search-item"
                   onClick={() => {
                     clearSelectedSymbol();
-                    setTimeout(() => clearSelectedSymbol(stock.symbol), 0);
+                    setTimeout(() => clearSelectedSymbol(stock.tradingSymbol), 0);
                   }}
                 >
-                  <div className="search-symbol">{stock.symbol}</div>
+                  <div className="search-symbol">{stock.tradingSymbol}</div>
                   <div className="search-name">{stock.name}</div>
                 </div>
               ))}
