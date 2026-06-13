@@ -27,17 +27,17 @@ public interface UpstoxService {
      * Searches available stocks by a query string.
      *
      * @param query partial symbol or name
-     * @return list of maps containing stock details (symbol, name, price, change, changePercent)
+     * @return list of search responses
      */
-    List<Map<String, Object>> searchStocks(String query);
+    List<com.chanakyaiq.dto.StockSearchResponseDTO> searchStocks(String query);
 
     /**
      * Retrieves detailed information for a specific stock.
      *
-     * @param symbol stock ticker
-     * @return map with detailed fields including price and market status
+     * @param instrumentKey stock identifier
+     * @return detailed fields including price and market status
      */
-    Map<String, Object> getStockDetails(String symbol);
+    com.chanakyaiq.dto.StockDetailsDTO getStockDetails(String instrumentKey);
 
     /**
      * Generates a list of historical price points for charting.

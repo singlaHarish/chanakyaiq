@@ -111,7 +111,7 @@ chanakyaiq/
 ### Backend (Java/Spring Boot)
 - **Interface-Driven Design**: Services must be separated into `api` (interfaces) and `impl` (implementations) packages (e.g., `TradeService` and `TradeServiceImpl`).
 - **Dependency Injection**: Prioritize constructor-based injection (e.g., using `@RequiredArgsConstructor` from Lombok) for required dependencies.
-- **Boilerplate Reduction**: Extensively use Lombok (`@Data`, `@Builder`, `@NoArgsConstructor`, `@AllArgsConstructor`) for entities and data transfer objects.
+- **Model Design**: Prefer using **Java Records** for models, DTOs, and immutable data structures (taking advantage of Java 21 features). Use Lombok (`@Data`, `@Builder`, `@NoArgsConstructor`, `@AllArgsConstructor`) for JPA entities where records are not suitable.
 - **Documentation**: Use Javadoc on interfaces to define business contracts and clarify complex logic.
 
 ### Frontend (React/TypeScript)

@@ -1,7 +1,9 @@
 package com.chanakyaiq.controller;
 
 import com.chanakyaiq.service.api.UpstoxService;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.chanakyaiq.dto.StockDetailsDTO;
+import com.chanakyaiq.dto.StockSearchResponseDTO;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -11,22 +13,21 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
 import java.util.List;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/api/stocks")
+@RequiredArgsConstructor
 public class StockController {
 
-    @Autowired
-    private UpstoxService upstoxService;
+    private final UpstoxService upstoxService;
 
     @GetMapping("/search")
-    public ResponseEntity<List<Map<String, Object>>> searchStocks(@RequestParam String query) {
+    public ResponseEntity<List<StockSearchResponseDTO>> searchStocks(@RequestParam String query) {
         return ResponseEntity.ok(upstoxService.searchStocks(query));
     }
 
     @GetMapping("/price/{symbol}")
-    public ResponseEntity<Map<String, Object>> getStockDetails(@PathVariable String symbol) {
+    public ResponseEntity<StockDetailsDTO> getStockDetails(@PathVariable String symbol) {
         return ResponseEntity.ok(upstoxService.getStockDetails(symbol));
     }
 

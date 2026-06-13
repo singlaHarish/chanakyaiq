@@ -140,7 +140,6 @@ export default function TradingPanel({ onTradeSuccess, selectedSymbol, clearSele
                 >
                   <div className="search-symbol">{stock.symbol}</div>
                   <div className="search-name">{stock.name}</div>
-                  <div className="search-price">₹{Number(stock.price).toFixed(2)}</div>
                 </div>
               ))}
             </div>

@@ -1,0 +1,52 @@
+openapi: 3.0.3
+info:
+  title: Upstox API Models
+  version: 1.0.0
+paths: {}
+components:
+  schemas:
+    UpstoxInstrument:
+      type: object
+      properties:
+        name:
+          type: string
+        instrument_key:
+          type: string
+        segment:
+          type: string
+        exchange:
+          type: string
+        trading_symbol:
+          type: string
+          
+    UpstoxSearchResponse:
+      type: object
+      properties:
+        status:
+          type: string
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/UpstoxInstrument'
+            
+    UpstoxQuoteData:
+      type: object
+      properties:
+        last_price:
+          type: number
+          format: double
+        net_change:
+          type: number
+          format: double
+        symbol:
+          type: string
+
+    UpstoxQuoteResponse:
+      type: object
+      properties:
+        status:
+          type: string
+        data:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/UpstoxQuoteData'
