@@ -29,7 +29,7 @@ public class RestClientConfig {
     private int defaultMaxPerRoute;
 
     @Bean
-    public RestClient restClient(RestClient.Builder builder) {
+    public RestClient restClient() {
         ConnectionConfig connectionConfig = ConnectionConfig.custom()
                 .setConnectTimeout(Timeout.ofMilliseconds(connectTimeout))
                 .setSocketTimeout(Timeout.ofMilliseconds(readTimeout))
@@ -53,6 +53,8 @@ public class RestClientConfig {
 
         HttpComponentsClientHttpRequestFactory factory = new HttpComponentsClientHttpRequestFactory(httpClient);
         
-        return builder.requestFactory(factory).build();
+        return RestClient.builder()
+                .requestFactory(factory)
+                .build();
     }
 }
