@@ -40,7 +40,6 @@ Deep dive into authentication:
 | See all API endpoints | [AGENTS.md - API Endpoints](./AGENTS.md#api-endpoints) |
 | Understand database structure | [AGENTS.md - Database Schema](./AGENTS.md#database-schema) |
 | Setup development environment | [AGENTS.md - Development Workflow](./AGENTS.md#development-workflow) |
-| Fix authentication issues | [OAUTH2-FLOW.md - Troubleshooting](./OAUTH2-FLOW.md#-common-issues--solutions) |
 | Add new features | [AGENTS.md - Common Development Tasks](./AGENTS.md#common-development-tasks) |
 | Understand business logic | [AGENTS.md - Business Logic Highlights](./AGENTS.md#business-logic-highlights) |
 
