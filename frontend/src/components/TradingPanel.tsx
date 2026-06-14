@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
+import { StockSearchResponse, StockDetails } from '../types';
 
 export default function TradingPanel({ onTradeSuccess, selectedSymbol, clearSelectedSymbol, apiBase }) {
   const [searchQuery, setSearchQuery] = useState('');
-  const [searchResults, setSearchResults] = useState([]);
-  const [stockDetails, setStockDetails] = useState(null);
+  const [searchResults, setSearchResults] = useState<StockSearchResponse[]>([]);
+  const [stockDetails, setStockDetails] = useState<StockDetails | null>(null);
   const [quantity, setQuantity] = useState(1);
   const [tradeMessage, setTradeMessage] = useState(null);
   const [tradeError, setTradeError] = useState(null);
@@ -65,7 +66,7 @@ export default function TradingPanel({ onTradeSuccess, selectedSymbol, clearSele
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        symbol: stockDetails.symbol,
+        symbol: stockDetails.instrumentKey,
         quantity: parseInt(quantity),
       }),
     })
@@ -131,11 +132,11 @@ export default function TradingPanel({ onTradeSuccess, selectedSymbol, clearSele
             <div className="search-results">
               {searchResults.map((stock) => (
                 <div
-                  key={stock.tradingSymbol}
+                  key={stock.instrumentKey}
                   className="search-item"
                   onClick={() => {
                     clearSelectedSymbol();
-                    setTimeout(() => clearSelectedSymbol(stock.tradingSymbol), 0);
+                    setTimeout(() => clearSelectedSymbol(stock.instrumentKey), 0);
                   }}
                 >
                   <div className="search-symbol">{stock.tradingSymbol}</div>

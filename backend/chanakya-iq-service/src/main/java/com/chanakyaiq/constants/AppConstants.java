@@ -18,9 +18,9 @@ public class AppConstants {
 
     // Query Parameters
     public static final String QUERY_PARAM_QUERY = "query";
-    public static final String QUERY_PARAM_EXCHANGE = "exchange";
-    public static final String QUERY_PARAM_SEGMENT = "segment";
-    public static final String QUERY_PARAM_INSTRUMENT_TYPE = "instrument_type";
+    public static final String QUERY_PARAM_EXCHANGE = "exchanges";
+    public static final String QUERY_PARAM_SEGMENT = "segments";
+    public static final String QUERY_PARAM_INSTRUMENT_TYPE = "instrument_types";
     public static final String QUERY_PARAM_INSTRUMENT_KEY = "instrument_key";
 
     // Exchange and Segment Values

@@ -87,6 +87,7 @@ public class UpstoxServiceImpl implements UpstoxService {
 
     @Override
     public List<StockSearchResponseDTO> searchStocks(String query) {
+        log.info("Searching stocks with query: {}", query);
         List<StockSearchResponseDTO> results = new ArrayList<>();
 
         // Build URL with filters: exchange=NSE, segment=EQ, instrument_type=EQ
@@ -98,21 +99,30 @@ public class UpstoxServiceImpl implements UpstoxService {
 
         UpstoxSearchResponse response = restUtil.executeGetWithToken(
                 restClient, url, properties.getApi().getToken(), UpstoxSearchResponse.class);
+        
+        log.info("Received response for search query: {}, {} ", query, response.toString());
 
-        if (response != null && STATUS_SUCCESS.equals(response.getStatus()) && response.getData() != null) {
+        if (STATUS_SUCCESS.equals(response.getStatus()) && response.getData() != null) {
+            log.info("Search API returned {} instruments", response.getData().size());
+            
             for (UpstoxInstrument instrument : response.getData()) {
                 results.add(new StockSearchResponseDTO(
                         instrument.getInstrumentKey(),
                         instrument.getTradingSymbol(),
                         instrument.getName()
-                 ));
+                ));
             }
+            
+            log.info("Returning {} stocks", results.size());
+        } else {
+            log.warn("Search API returned null or unsuccessful response");
         }
         return results;
     }
 
     @Override
     public StockDetailsDTO getStockDetails(String instrumentKey) {
+        log.info("Fetching stock details for instrument: {}", instrumentKey);
         String url = API_BASE_URL + MARKET_QUOTE_ENDPOINT + "?" + QUERY_PARAM_INSTRUMENT_KEY + "=" + instrumentKey;
         UpstoxQuoteResponse response = restUtil.executeGetWithToken(
                 restClient, url, properties.getApi().getToken(), UpstoxQuoteResponse.class);
@@ -122,6 +132,9 @@ public class UpstoxServiceImpl implements UpstoxService {
             UpstoxQuoteData quoteData = dataMap.get(instrumentKey);
 
             if (quoteData != null) {
+                log.debug("Quote data found for {}: lastPrice={}, netChange={}", 
+                        instrumentKey, quoteData.getLastPrice(), quoteData.getNetChange());
+                
                 BigDecimal price = BigDecimal.valueOf(quoteData.getLastPrice() != null ? quoteData.getLastPrice() : 0.0);
                 BigDecimal change = BigDecimal.valueOf(quoteData.getNetChange() != null ? quoteData.getNetChange() : 0.0);
 
@@ -134,6 +147,9 @@ public class UpstoxServiceImpl implements UpstoxService {
 
                 String name = quoteData.getSymbol() != null ? quoteData.getSymbol() : instrumentKey;
 
+                log.info("Successfully fetched details for {}: price={}, change={}, changePercent={}%", 
+                        name, price, change, changePercent);
+                
                 return new StockDetailsDTO(
                         instrumentKey,
                         name,
@@ -145,22 +161,28 @@ public class UpstoxServiceImpl implements UpstoxService {
             }
         }
 
+        log.warn("Could not fetch stock details for instrument: {}. Returning default values.", instrumentKey);
         return new StockDetailsDTO(instrumentKey, UNKNOWN_SYMBOL, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, isMarketOpen());
     }
 
     @Override
     public List<BigDecimal> getHistoricalPrices(String symbol) {
+        log.info("Generating historical prices for symbol: {}", symbol);
         BigDecimal currentPrice = getStockPrice(symbol);
         List<BigDecimal> list = new ArrayList<>();
         BigDecimal temp = currentPrice != null && currentPrice.compareTo(BigDecimal.ZERO) > 0
                 ? currentPrice
                 : new BigDecimal(DEFAULT_PRICE);
 
+        log.debug("Starting price for historical data: {}", temp);
+        
         for (int i = 0; i < HISTORICAL_DATA_POINTS; i++) {
             list.add(0, temp.setScale(PRICE_SCALE, RoundingMode.HALF_UP));
             double changePercent = (random.nextDouble() - 0.49) * 0.015;
             temp = temp.multiply(BigDecimal.valueOf(1.0 - changePercent));
         }
+        
+        log.info("Generated {} historical price points for {}", list.size(), symbol);
         return list;
     }
 }

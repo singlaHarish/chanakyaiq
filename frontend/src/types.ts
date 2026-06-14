@@ -24,3 +24,19 @@ export interface Transaction {
   type: 'BUY' | 'SELL';
   timestamp: string;
 }
+
+export interface StockSearchResponse {
+  instrumentKey: string;
+  tradingSymbol: string;
+  name: string;
+}
+
+export interface StockDetails {
+  instrumentKey: string;
+  symbol: string;
+  name: string;
+  price: number;
+  change: number;
+  changePercent: number;
+  isMarketOpen: boolean;
+}
