@@ -31,12 +31,36 @@ export interface StockSearchResponse {
   name: string;
 }
 
+export interface OHLC {
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+}
+
+export interface DepthItem {
+  quantity: number;
+  price: number;
+  orders: number;
+}
+
+export interface Depth {
+  buy: DepthItem[];
+  sell: DepthItem[];
+}
+
 export interface StockDetails {
   instrumentKey: string;
   symbol: string;
   name: string;
-  price: number;
-  change: number;
+  lastPrice: number;
+  netChange: number;
   changePercent: number;
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+  volume: number;
+  averagePrice: number;
   isMarketOpen: boolean;
 }

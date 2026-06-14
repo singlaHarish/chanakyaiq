@@ -82,7 +82,7 @@ public class UpstoxServiceImpl implements UpstoxService {
     @Override
     public BigDecimal getStockPrice(String instrumentKey) {
         StockDetailsDTO details = getStockDetails(instrumentKey);
-        return details != null ? details.price() : BigDecimal.ZERO;
+        return details != null ? details.lastPrice() : BigDecimal.ZERO;
     }
 
     @Override
@@ -135,34 +135,58 @@ public class UpstoxServiceImpl implements UpstoxService {
                 log.debug("Quote data found for {}: lastPrice={}, netChange={}", 
                         instrumentKey, quoteData.getLastPrice(), quoteData.getNetChange());
                 
-                BigDecimal price = BigDecimal.valueOf(quoteData.getLastPrice() != null ? quoteData.getLastPrice() : 0.0);
-                BigDecimal change = BigDecimal.valueOf(quoteData.getNetChange() != null ? quoteData.getNetChange() : 0.0);
+                BigDecimal lastPrice = BigDecimal.valueOf(quoteData.getLastPrice() != null ? quoteData.getLastPrice() : 0.0);
+                BigDecimal netChange = BigDecimal.valueOf(quoteData.getNetChange() != null ? quoteData.getNetChange() : 0.0);
 
                 BigDecimal changePercent = BigDecimal.ZERO;
-                if (price.subtract(change).compareTo(BigDecimal.ZERO) != 0) {
-                    BigDecimal prevClose = price.subtract(change);
-                    changePercent = change.divide(prevClose, PERCENTAGE_SCALE, RoundingMode.HALF_UP)
+                if (lastPrice.subtract(netChange).compareTo(BigDecimal.ZERO) != 0) {
+                    BigDecimal prevClose = lastPrice.subtract(netChange);
+                    changePercent = netChange.divide(prevClose, PERCENTAGE_SCALE, RoundingMode.HALF_UP)
                             .multiply(new BigDecimal(PERCENTAGE_MULTIPLIER));
                 }
 
-                String name = quoteData.getSymbol() != null ? quoteData.getSymbol() : instrumentKey;
+                String symbol = quoteData.getSymbol() != null ? quoteData.getSymbol() : instrumentKey;
+                
+                // Extract OHLC data
+                BigDecimal open = BigDecimal.ZERO;
+                BigDecimal high = BigDecimal.ZERO;
+                BigDecimal low = BigDecimal.ZERO;
+                BigDecimal close = BigDecimal.ZERO;
+                
+                if (quoteData.getOhlc() != null) {
+                    open = BigDecimal.valueOf(quoteData.getOhlc().getOpen() != null ? quoteData.getOhlc().getOpen() : 0.0);
+                    high = BigDecimal.valueOf(quoteData.getOhlc().getHigh() != null ? quoteData.getOhlc().getHigh() : 0.0);
+                    low = BigDecimal.valueOf(quoteData.getOhlc().getLow() != null ? quoteData.getOhlc().getLow() : 0.0);
+                    close = BigDecimal.valueOf(quoteData.getOhlc().getClose() != null ? quoteData.getOhlc().getClose() : 0.0);
+                }
+                
+                Integer volume = quoteData.getVolume() != null ? quoteData.getVolume() : 0;
+                BigDecimal averagePrice = BigDecimal.valueOf(quoteData.getAveragePrice() != null ? quoteData.getAveragePrice() : 0.0);
 
-                log.info("Successfully fetched details for {}: price={}, change={}, changePercent={}%", 
-                        name, price, change, changePercent);
+                log.info("Successfully fetched details for {}: lastPrice={}, netChange={}, changePercent={}%", 
+                        symbol, lastPrice, netChange, changePercent);
                 
                 return new StockDetailsDTO(
                         instrumentKey,
-                        name,
-                        price.setScale(PRICE_SCALE, RoundingMode.HALF_UP),
-                        change.setScale(PRICE_SCALE, RoundingMode.HALF_UP),
+                        symbol,
+                        symbol, // Using symbol as name for now (could be enhanced with full company name)
+                        lastPrice.setScale(PRICE_SCALE, RoundingMode.HALF_UP),
+                        netChange.setScale(PRICE_SCALE, RoundingMode.HALF_UP),
                         changePercent.setScale(PRICE_SCALE, RoundingMode.HALF_UP),
+                        open.setScale(PRICE_SCALE, RoundingMode.HALF_UP),
+                        high.setScale(PRICE_SCALE, RoundingMode.HALF_UP),
+                        low.setScale(PRICE_SCALE, RoundingMode.HALF_UP),
+                        close.setScale(PRICE_SCALE, RoundingMode.HALF_UP),
+                        volume,
+                        averagePrice.setScale(PRICE_SCALE, RoundingMode.HALF_UP),
                         isMarketOpen()
                 );
             }
         }
 
         log.warn("Could not fetch stock details for instrument: {}. Returning default values.", instrumentKey);
-        return new StockDetailsDTO(instrumentKey, UNKNOWN_SYMBOL, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, isMarketOpen());
+        return new StockDetailsDTO(instrumentKey, UNKNOWN_SYMBOL, UNKNOWN_SYMBOL, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, 
+                BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, 0, BigDecimal.ZERO, isMarketOpen());
     }
 
     @Override

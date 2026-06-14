@@ -73,7 +73,7 @@ export default function TradingPanel({ onTradeSuccess, selectedSymbol, clearSele
       .then(async (res) => {
         const data = await res.json();
         if (res.ok && data.success) {
-          setTradeMessage(`Successfully executed market ${type.toUpperCase()} order for ${quantity} shares of ${stockDetails.symbol}`);
+          setTradeMessage(`Successfully executed market ${type.toUpperCase()} order for ${quantity} shares of ${stockDetails.name}`);
           onTradeSuccess();
         } else {
           setTradeError(data.error || 'Failed to execute order');
@@ -85,7 +85,7 @@ export default function TradingPanel({ onTradeSuccess, selectedSymbol, clearSele
       });
   };
 
-  const isProfit = stockDetails?.change >= 0;
+  const isProfit = stockDetails?.netChange >= 0;
 
   // Simple sparkline visual using historical prices
   const renderSparkline = () => {
@@ -160,13 +160,13 @@ export default function TradingPanel({ onTradeSuccess, selectedSymbol, clearSele
           
           <div className="info-header">
             <div>
-              <h2 className="info-symbol">{stockDetails.symbol}</h2>
-              <p className="info-name">{stockDetails.name}</p>
+              <h2 className="info-symbol">{stockDetails.name}</h2>
+              <p className="info-name">{stockDetails.symbol}</p>
             </div>
             <div className="info-price-section text-right">
-              <h2 className="info-price">₹{Number(stockDetails.price).toFixed(2)}</h2>
+              <h2 className="info-price">₹{Number(stockDetails.lastPrice).toFixed(2)}</h2>
               <p className={`info-change ${isProfit ? 'profit' : 'loss'}`}>
-                {isProfit ? '+' : ''}{Number(stockDetails.change).toFixed(2)} ({Number(stockDetails.changePercent).toFixed(2)}%)
+                {isProfit ? '+' : ''}{Number(stockDetails.netChange).toFixed(2)} ({Number(stockDetails.changePercent).toFixed(2)}%)
               </p>
             </div>
           </div>

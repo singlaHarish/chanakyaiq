@@ -29,17 +29,92 @@ components:
           items:
             $ref: '#/components/schemas/UpstoxInstrument'
             
+    UpstoxOHLC:
+      type: object
+      properties:
+        open:
+          type: number
+          format: double
+        high:
+          type: number
+          format: double
+        low:
+          type: number
+          format: double
+        close:
+          type: number
+          format: double
+          
+    UpstoxDepthItem:
+      type: object
+      properties:
+        quantity:
+          type: integer
+        price:
+          type: number
+          format: double
+        orders:
+          type: integer
+          
+    UpstoxDepth:
+      type: object
+      properties:
+        buy:
+          type: array
+          items:
+            $ref: '#/components/schemas/UpstoxDepthItem'
+        sell:
+          type: array
+          items:
+            $ref: '#/components/schemas/UpstoxDepthItem'
+            
     UpstoxQuoteData:
       type: object
       properties:
+        ohlc:
+          $ref: '#/components/schemas/UpstoxOHLC'
+        depth:
+          $ref: '#/components/schemas/UpstoxDepth'
+        timestamp:
+          type: string
+        instrument_token:
+          type: string
+        symbol:
+          type: string
         last_price:
+          type: number
+          format: double
+        volume:
+          type: integer
+        average_price:
+          type: number
+          format: double
+        oi:
           type: number
           format: double
         net_change:
           type: number
           format: double
-        symbol:
+        total_buy_quantity:
+          type: number
+          format: double
+        total_sell_quantity:
+          type: number
+          format: double
+        lower_circuit_limit:
+          type: number
+          format: double
+        upper_circuit_limit:
+          type: number
+          format: double
+        last_trade_time:
           type: string
+        oi_day_high:
+          type: number
+          format: double
+        oi_day_low:
+          type: number
+          format: double
 
     UpstoxQuoteResponse:
       type: object
