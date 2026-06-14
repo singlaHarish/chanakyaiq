@@ -129,7 +129,12 @@ public class UpstoxServiceImpl implements UpstoxService {
 
         if (response != null && STATUS_SUCCESS.equals(response.getStatus()) && response.getData() != null) {
             Map<String, UpstoxQuoteData> dataMap = response.getData();
-            UpstoxQuoteData quoteData = dataMap.get(instrumentKey);
+            if(dataMap.size() != 1) {
+                log.warn("Unexpected response for instrument: {}:{}. Returning default values.", instrumentKey, response);
+                return new StockDetailsDTO(instrumentKey, UNKNOWN_SYMBOL, UNKNOWN_SYMBOL, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO,
+                        BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, 0, BigDecimal.ZERO, isMarketOpen());
+            }
+            UpstoxQuoteData quoteData = dataMap.values().iterator().next();
 
             if (quoteData != null) {
                 log.debug("Quote data found for {}: lastPrice={}, netChange={}", 
