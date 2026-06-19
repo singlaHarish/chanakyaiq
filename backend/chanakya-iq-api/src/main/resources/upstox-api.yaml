@@ -125,3 +125,21 @@ components:
           type: object
           additionalProperties:
             $ref: '#/components/schemas/UpstoxQuoteData'
+
+    UpstoxHistoricalCandleData:
+      type: object
+      properties:
+        candles:
+          type: array
+          items:
+            type: array
+            items:
+              type: object
+
+    UpstoxHistoricalCandleResponse:
+      type: object
+      properties:
+        status:
+          type: string
+        data:
+          $ref: '#/components/schemas/UpstoxHistoricalCandleData'

@@ -32,7 +32,7 @@ public class StockController {
     }
 
     @GetMapping("/history/{symbol}")
-    public ResponseEntity<List<BigDecimal>> getHistoricalPrices(@PathVariable String symbol) {
+    public ResponseEntity<List<com.chanakyaiq.dto.StockCandleDTO>> getHistoricalPrices(@PathVariable String symbol) {
         return ResponseEntity.ok(upstoxService.getHistoricalPrices(symbol));
     }
 }

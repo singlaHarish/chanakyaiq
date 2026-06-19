@@ -14,11 +14,20 @@ import java.util.Random;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 
+import com.chanakyaiq.api.model.UpstoxHistoricalCandleResponse;
+import com.chanakyaiq.api.model.UpstoxHistoricalCandleData;
 import com.chanakyaiq.api.model.UpstoxInstrument;
 import com.chanakyaiq.api.model.UpstoxQuoteData;
 import com.chanakyaiq.api.model.UpstoxQuoteResponse;
 import com.chanakyaiq.api.model.UpstoxSearchResponse;
 import com.chanakyaiq.config.ChanakyaIqProperties;
+import com.chanakyaiq.dto.StockCandleDTO;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import static com.chanakyaiq.constants.AppConstants.API_BASE_URL_V3;
+import static com.chanakyaiq.constants.AppConstants.HISTORICAL_CANDLE_ENDPOINT;
+import static com.chanakyaiq.constants.AppConstants.CANDLE_UNIT_DAYS;
+import static com.chanakyaiq.constants.AppConstants.CANDLE_INTERVAL_1;
 import static com.chanakyaiq.constants.AppConstants.API_BASE_URL;
 import static com.chanakyaiq.constants.AppConstants.DEFAULT_PRICE;
 import static com.chanakyaiq.constants.AppConstants.EXCHANGE_NSE;
@@ -195,23 +204,55 @@ public class UpstoxServiceImpl implements UpstoxService {
     }
 
     @Override
-    public List<BigDecimal> getHistoricalPrices(String symbol) {
-        log.info("Generating historical prices for symbol: {}", symbol);
-        BigDecimal currentPrice = getStockPrice(symbol);
-        List<BigDecimal> list = new ArrayList<>();
-        BigDecimal temp = currentPrice != null && currentPrice.compareTo(BigDecimal.ZERO) > 0
-                ? currentPrice
-                : new BigDecimal(DEFAULT_PRICE);
+    public List<StockCandleDTO> getHistoricalPrices(String instrumentKey) {
+        log.info("Fetching real historical prices from Upstox for instrument: {}", instrumentKey);
+        List<StockCandleDTO> list = new ArrayList<>();
 
-        log.debug("Starting price for historical data: {}", temp);
-        
-        for (int i = 0; i < HISTORICAL_DATA_POINTS; i++) {
-            list.add(0, temp.setScale(PRICE_SCALE, RoundingMode.HALF_UP));
-            double changePercent = (random.nextDouble() - 0.49) * 0.015;
-            temp = temp.multiply(BigDecimal.valueOf(1.0 - changePercent));
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+        String toDateStr = LocalDate.now(ZoneId.of(TIMEZONE_IST)).format(formatter);
+        String fromDateStr = LocalDate.now(ZoneId.of(TIMEZONE_IST)).minusDays(30).format(formatter);
+
+        // Build URL: GET /v3/historical-candle/{instrumentKey}/days/1/{to_date}/{from_date}
+        String url = API_BASE_URL_V3 + HISTORICAL_CANDLE_ENDPOINT + "/" + instrumentKey + "/"
+                + CANDLE_UNIT_DAYS + "/" + CANDLE_INTERVAL_1 + "/" + toDateStr + "/" + fromDateStr;
+
+        UpstoxHistoricalCandleResponse response = restUtil.executeGetWithToken(
+                restClient, url, properties.getApi().getToken(), UpstoxHistoricalCandleResponse.class);
+
+        if (response != null && STATUS_SUCCESS.equals(response.getStatus()) && response.getData() != null) {
+            List<List<Object>> candles = (List<List<Object>>) (Object) response.getData().getCandles();
+            if (candles != null) {
+                log.info("Historical API returned {} candles for {}", candles.size(), instrumentKey);
+                // Map from oldest to newest for chart display
+                for (int i = candles.size() - 1; i >= 0; i--) {
+                    List<Object> candle = candles.get(i);
+                    if (candle.size() >= 6) {
+                        try {
+                            String timestamp = String.valueOf(candle.get(0));
+                            BigDecimal open = new BigDecimal(String.valueOf(candle.get(1)));
+                            BigDecimal high = new BigDecimal(String.valueOf(candle.get(2)));
+                            BigDecimal low = new BigDecimal(String.valueOf(candle.get(3)));
+                            BigDecimal close = new BigDecimal(String.valueOf(candle.get(4)));
+                            Long volume = Double.valueOf(String.valueOf(candle.get(5))).longValue();
+
+                            list.add(new StockCandleDTO(
+                                    timestamp,
+                                    open.setScale(PRICE_SCALE, RoundingMode.HALF_UP),
+                                    high.setScale(PRICE_SCALE, RoundingMode.HALF_UP),
+                                    low.setScale(PRICE_SCALE, RoundingMode.HALF_UP),
+                                    close.setScale(PRICE_SCALE, RoundingMode.HALF_UP),
+                                    volume
+                            ));
+                        } catch (Exception e) {
+                            log.error("Error parsing candle data at index {}: {}", i, candle, e);
+                        }
+                    }
+                }
+            }
+        } else {
+            log.warn("Historical API call returned null or unsuccessful response for {}", instrumentKey);
         }
-        
-        log.info("Generated {} historical price points for {}", list.size(), symbol);
+
         return list;
     }
 }

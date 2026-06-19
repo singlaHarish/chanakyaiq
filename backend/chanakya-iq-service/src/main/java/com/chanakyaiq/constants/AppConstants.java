@@ -13,8 +13,12 @@ public class AppConstants {
 
     // API URLs
     public static final String API_BASE_URL = "https://api.upstox.com/v2";
+    public static final String API_BASE_URL_V3 = "https://api.upstox.com/v3";
     public static final String INSTRUMENT_SEARCH_ENDPOINT = "/instruments/search";
     public static final String MARKET_QUOTE_ENDPOINT = "/market-quote/quotes";
+    public static final String HISTORICAL_CANDLE_ENDPOINT = "/historical-candle";
+    public static final String CANDLE_UNIT_DAYS = "days";
+    public static final String CANDLE_INTERVAL_1 = "1";
 
     // Query Parameters
     public static final String QUERY_PARAM_QUERY = "query";

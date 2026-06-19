@@ -40,10 +40,10 @@ public interface UpstoxService {
     com.chanakyaiq.dto.StockDetailsDTO getStockDetails(String instrumentKey);
 
     /**
-     * Generates a list of historical price points for charting.
+     * Retrieves historical candle data for charting.
      *
-     * @param symbol stock ticker
-     * @return list of {@link BigDecimal} prices (oldest to newest)
+     * @param instrumentKey stock identifier (e.g. NSE_EQ|INE002A01018)
+     * @return list of candles (oldest to newest)
      */
-    List<BigDecimal> getHistoricalPrices(String symbol);
+    List<com.chanakyaiq.dto.StockCandleDTO> getHistoricalPrices(String instrumentKey);
 }

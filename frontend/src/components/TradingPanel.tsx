@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { StockSearchResponse, StockDetails } from '../types';
+import { StockSearchResponse, StockDetails, StockCandle } from '../types';
 
 export default function TradingPanel({ onTradeSuccess, selectedSymbol, clearSelectedSymbol, apiBase }) {
   const [searchQuery, setSearchQuery] = useState('');
@@ -8,7 +8,7 @@ export default function TradingPanel({ onTradeSuccess, selectedSymbol, clearSele
   const [quantity, setQuantity] = useState(1);
   const [tradeMessage, setTradeMessage] = useState(null);
   const [tradeError, setTradeError] = useState(null);
-  const [historicalData, setHistoricalData] = useState([]);
+  const [historicalData, setHistoricalData] = useState<StockCandle[]>([]);
 
   // Fetch search results as user types
   useEffect(() => {
@@ -89,29 +89,39 @@ export default function TradingPanel({ onTradeSuccess, selectedSymbol, clearSele
 
   // Simple sparkline visual using historical prices
   const renderSparkline = () => {
-    if (historicalData.length === 0) return null;
-    const max = Math.max(...historicalData);
-    const min = Math.min(...historicalData);
+    if (historicalData.length === 0) return <p className="no-data">No historical data available</p>;
+    const closePrices = historicalData.map((candle) => candle.close);
+    const max = Math.max(...closePrices);
+    const min = Math.min(...closePrices);
     const range = max - min === 0 ? 1 : max - min;
     const height = 80;
     const width = 280;
     const padding = 5;
 
-    const points = historicalData.map((val, index) => {
-      const x = padding + (index * (width - padding * 2)) / (historicalData.length - 1);
+    const points = closePrices.map((val, index) => {
+      const x = padding + (index * (width - padding * 2)) / (closePrices.length - 1);
       const y = height - padding - ((val - min) * (height - padding * 2)) / range;
       return `${x},${y}`;
     }).join(' ');
 
+    const startDate = new Date(historicalData[0].timestamp).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+    const endDate = new Date(historicalData[historicalData.length - 1].timestamp).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+
     return (
-      <svg className="sparkline" width={width} height={height}>
-        <polyline
-          fill="none"
-          stroke={isProfit ? '#00e676' : '#ff1744'}
-          strokeWidth="2.5"
-          points={points}
-        />
-      </svg>
+      <div className="sparkline-wrapper" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+        <svg className="sparkline" width={width} height={height}>
+          <polyline
+            fill="none"
+            stroke={isProfit ? '#00e676' : '#ff1744'}
+            strokeWidth="2.5"
+            points={points}
+          />
+        </svg>
+        <div className="chart-dates" style={{ display: 'flex', justifyContent: 'space-between', width: '100%', fontSize: '0.75rem', opacity: 0.6, marginTop: '4px', padding: '0 8px' }}>
+          <span>{startDate}</span>
+          <span>{endDate}</span>
+        </div>
+      </div>
     );
   };
 
@@ -172,7 +182,7 @@ export default function TradingPanel({ onTradeSuccess, selectedSymbol, clearSele
           </div>
 
           <div className="chart-container">
-            <p className="chart-title">Last 20 ticks trend</p>
+            <p className="chart-title">Daily Historical Trend (Last 30 Days)</p>
             {renderSparkline()}
           </div>
 
