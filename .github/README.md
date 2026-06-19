@@ -51,8 +51,9 @@ chanakyaiq/
 │   ├── README.md          ← You are here
 │   ├── AGENTS.md          ← Complete project documentation
 │   └── OAUTH2-FLOW.md     ← Authentication deep dive
-├── backend/               ← Spring Boot API (Java 21)
-│   └── chanakya-iq-service/
+├── backend/               ← Multi-module Maven parent (Java 21)
+│   ├── chanakya-iq-api/   ← Generated models (OpenAPI plugin)
+│   └── chanakya-iq-service/ ← Spring Boot service and APIs
 └── frontend/              ← React UI (TypeScript)
 ```
 
@@ -65,10 +66,10 @@ chanakyaiq/
 
 ## 🔑 Key Technologies
 
-- **Backend**: Java 21, Spring Boot 4.0.6, Spring Security, JPA/Hibernate, H2 Database
+- **Backend**: Java 21, Spring Boot 4.0.6, Spring Security, JPA/Hibernate, H2 Database, RestClient, Log4j2
 - **Frontend**: React 19.2.6, TypeScript 6.0.3, Vite 8.0.12
 - **Authentication**: Google OAuth2 (session-based with JSESSIONID cookies)
-- **Architecture**: Layered architecture with interface-driven design
+- **Architecture**: Multi-module Maven project with OpenAPI code generation
 
 ## 💡 Documentation Philosophy
 

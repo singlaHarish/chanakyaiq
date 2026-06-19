@@ -130,7 +130,7 @@ KEY FEATURES DOCUMENTED
 ✓ Google OAuth2 authentication (session-based)
 ✓ Auto-provisioning users with ₹10L balance
 ✓ Portfolio management with real-time P&L
-✓ Mock market data simulation (IST hours)
+✓ Live Upstox market data integration (IST hours)
 ✓ Buy/sell trading with weighted average pricing
 ✓ Transaction history
 ✓ H2 database (file-based)
@@ -146,7 +146,10 @@ Backend:
   - Spring Security + OAuth2
   - JPA/Hibernate
   - H2 Database
-  - Maven
+  - Maven (Multi-module parent project)
+  - OpenAPI Generator (for type-safe external APIs)
+  - Spring RestClient + Apache HttpClient5 (with connection pooling)
+  - Log4j2 (as logging framework)
   - Lombok
 
 Frontend:

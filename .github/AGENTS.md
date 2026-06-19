@@ -21,14 +21,18 @@
 ### Backend
 - **Language**: Java 21
 - **Framework**: Spring Boot 4.0.6
-- **Build Tool**: Maven (wrapper included)
+- **Build Tool**: Maven (wrapper included, multi-module structure)
+  - **`chanakya-iq-api`**: Module for OpenAPI-based code generation containing model classes generated automatically from the API specifications.
+  - **`chanakya-iq-service`**: Module for the core Spring Boot application containing business logic, REST APIs, and database integration.
 - **Database**: H2 (file-based persistence at `./db/chanakyaiq`)
 - **Security**: Spring Security with OAuth2
 - **Authentication**: Google OAuth2 (session-based with JSESSIONID cookie)
+- **Logging**: Log4j2 (via `spring-boot-starter-log4j2`, default Spring Boot starter logging excluded)
+- **Web Client**: Spring `RestClient` powered by Apache `HttpClient5` with connection pooling
 - **ORM**: JPA/Hibernate
 - **Additional Libraries**: 
-  - Lombok (for reducing boilerplate)
-  - H2 Console (database management UI)
+  - Lombok (for reducing boilerplate in models and entities)
+  - OpenAPI Generator Maven Plugin (generates models from OpenAPI YAML specs)
 
 ### Frontend
 - **Language**: TypeScript
@@ -51,71 +55,66 @@
 ### Directory Structure
 ```
 chanakyaiq/
-├── backend/                           # Spring Boot application
-│   ├── src/main/java/com/chanakyaiq/
-│   │   ├── config/
-│   │   │   └── SecurityConfig.java   # Security, OAuth2, CORS configuration
-│   │   ├── controller/               # REST API endpoints
-│   │   │   ├── UserController.java   # Auth status, user provisioning
-│   │   │   ├── PortfolioController.java  # Portfolio summary, transactions
-│   │   │   ├── TradeController.java  # Buy/sell operations
-│   │   │   └── StockController.java  # Stock search, prices, details
-│   │   ├── model/                    # JPA entities
-│   │   │   ├── User.java            # User (id, email, cashBalance)
-│   │   │   ├── Holding.java         # Stock holdings (userId, symbol, quantity, avgPrice)
-│   │   │   └── Transaction.java     # Trade history (userId, symbol, type, quantity, price, timestamp)
-│   │   ├── repository/              # JPA repositories
-│   │   │   ├── UserRepository.java
-│   │   │   ├── HoldingRepository.java
-│   │   │   └── TransactionRepository.java
-│   │   └── service/
-│   │       ├── api/                 # Service interfaces
-│   │       │   ├── UpstoxService.java      # Market data operations
-│   │       │   ├── TradeService.java       # Trade execution logic
-│   │       │   └── PortfolioService.java   # Portfolio aggregation
-│   │       └── impl/                # Service implementations
-│   │           ├── UpstoxServiceImpl.java  # Mock market data simulator
-│   │           ├── TradeServiceImpl.java   # Buy/sell logic
-│   │           └── PortfolioServiceImpl.java # Portfolio calculations
-│   ├── src/main/resources/
-│   │   └── application.properties   # App config, database, OAuth2 settings
-│   ├── db/                          # H2 database files (file-based persistence)
-│   ├── pom.xml                      # Maven dependencies
-│   └── .env                         # Google OAuth2 credentials
+├── backend/                           # Parent Maven Project
+│   ├── chanakya-iq-api/               # API Module (OpenAPI Model Generation)
+│   │   ├── src/main/resources/
+│   │   │   └── upstox-api.yaml        # Upstox API OpenAPI specification
+│   │   └── pom.xml                    # API module build & generation config
+│   │
+│   ├── chanakya-iq-service/           # Service Module (Business Logic & App)
+│   │   ├── src/main/java/com/chanakyaiq/
+│   │   │   ├── ChanakyaIqApplication.java # Spring Boot entry point
+│   │   │   ├── config/                # Security, RestClientConfig, Properties
+│   │   │   ├── constants/             # Application constants
+│   │   │   ├── controller/            # REST controllers
+│   │   │   ├── dto/                   # DTO records
+│   │   │   ├── model/                 # JPA database entities
+│   │   │   ├── repository/            # Repository interfaces
+│   │   │   ├── service/               # Services (api & impl)
+│   │   │   └── util/                  # Technical utilities (RestUtil)
+│   │   ├── src/main/resources/
+│   │   │   └── application.properties # Application settings
+│   │   ├── db/                        # Local H2 database files
+│   │   └── pom.xml                    # Service module build config
+│   │
+│   └── pom.xml                        # Parent POM (declares modules)
 │
 ├── frontend/                        # Vite + React (TypeScript)
 │   ├── src/
 │   │   ├── components/
-│   │   │   ├── Dashboard.tsx        # Portfolio summary cards (total value, P&L, cash)
-│   │   │   ├── HoldingsTable.tsx    # Current holdings grid with live prices
-│   │   │   ├── TradingPanel.tsx     # Stock search, buy/sell interface
-│   │   │   └── TransactionHistory.jsx # Past transactions log
-│   │   ├── App.tsx                  # Main app component (auth, routing, state)
-│   │   ├── main.tsx                 # React entry point
-│   │   └── index.css                # Global styles (dark glass-morphic theme)
-│   ├── package.json                 # NPM dependencies
-│   └── vite.config.ts              # Vite build configuration
+│   │   │   ├── Dashboard.tsx        # Portfolio metrics summary
+│   │   │   ├── HoldingsTable.tsx    # Holdings list and P&L view
+│   │   │   ├── TradingPanel.tsx     # Buy/sell stock panel (2-step lookup)
+│   │   │   └── TransactionHistory.jsx # Historical transaction logger
+│   │   ├── App.tsx                  # Core React component
+│   │   └── index.css                # Glass-morphism global styling
+│   ├── package.json                 # Node dependencies
+│   └── vite.config.ts              # Vite configuration
 │
-└── .github/                         # GitHub configuration
+└── .github/                         # GitHub repository configuration
     └── AGENTS.md                    # This file
 ```
 
 ### Architecture Pattern
-**Layered Architecture** with clear separation of concerns:
-1. **Presentation Layer**: REST controllers (`@RestController`)
-2. **Service Layer**: Business logic (`@Service` interfaces + implementations)
-3. **Data Access Layer**: JPA repositories (`@Repository`)
-4. **Domain Layer**: Entity models (`@Entity`)
+**Layered Architecture** with strict separation of technical and business concerns:
+1. **Presentation Layer**: REST controllers (`@RestController`) mapping HTTP request/response DTOs.
+2. **Service Layer**: Business logic (`@Service` interfaces + implementations).
+3. **Utility Layer**: Helper components (e.g., `RestUtil` for REST call boilerplates) separating technical integrations from business rules.
+4. **Data Access Layer**: JPA repositories (`@Repository`).
+5. **Domain Layer**: Entity models (`@Entity`) and generated API models.
 
 ---
 
 ## Coding Standards
 
 ### Backend (Java/Spring Boot)
-- **Interface-Driven Design**: Services must be separated into `api` (interfaces) and `impl` (implementations) packages (e.g., `TradeService` and `TradeServiceImpl`).
-- **Dependency Injection**: Prioritize constructor-based injection (e.g., using `@RequiredArgsConstructor` from Lombok) for required dependencies.
-- **Model Design**: Prefer using **Java Records** for models, DTOs, and immutable data structures (taking advantage of Java 21 features). Use Lombok (`@Data`, `@Builder`, `@NoArgsConstructor`, `@AllArgsConstructor`) for JPA entities where records are not suitable.
-- **Documentation**: Use Javadoc on interfaces to define business contracts and clarify complex logic.
+- **Logging**: Use Log4j2 via Lombok's `@Log4j2` annotation. Do not use `@Slf4j` or standard SLF4J logger imports directly. Exclude default Spring Boot logging in POM configs.
+- **Properties Mapping**: Use `@ConfigurationProperties` configuration classes (such as `ChanakyaIqProperties` with prefix `chanakyaiq`) for application configuration. Avoid raw `@Value` injections in services.
+- **Model and DTO Design**: Use auto-generated models from OpenAPI specs (defined under `chanakya-iq-api`) for mapping remote API responses. Use immutable **Java Records** for internal application DTOs and API responses returned to the frontend. Avoid mutable classes or static subclasses inside service implementations.
+- **Interface-Driven Design**: Keep service contracts in `api` packages and business logic implementations in `impl` packages.
+- **Dependency Injection**: Use constructor injection with Lombok's `@RequiredArgsConstructor` on all Spring beans.
+- **Separation of Concerns**: Isolate technical client handling (such as API authorization headers, JSON parsers, RestClient requests, client connection pooling, error handling) in reusable utility classes (`com.chanakyaiq.util.RestUtil`). Keep service classes clean of HTTP code.
+- **Constants**: Store all HTTP header values, URLs, endpoint paths, default config values, and segment indicators in a centralized constants file `com.chanakyaiq.constants.AppConstants`.
 
 ### Frontend (React/TypeScript)
 - **Component Style**: Use Functional Components with React Hooks (`useState`, `useEffect`, etc.).
@@ -158,14 +157,11 @@ chanakyaiq/
   4. Adds proceeds to cash, reduces/deletes holding
   5. Logs transaction
 
-### 4. Mock Market Data (UpstoxService)
-- **Market Hours**: Mon-Fri, 9:15 AM - 3:30 PM IST
-- **Price Simulation**: 
-  - Random walk with ±0.2% tick changes during market hours
-  - Prices frozen outside market hours
-  - Initial prices: ₹100-₹2000 randomly generated
-- **Stock Database**: In-memory map, dynamically creates stocks on-demand
-- **Historical Data**: Generates 20 data points for charting (simulated)
+### 4. Upstox API & Market Data Integration
+- **Market Hours**: Mon-Fri, 9:15 AM - 3:30 PM IST.
+- **Real-time Stock Search**: Calls Upstox API's `/instruments/search` endpoint to fetch matching stock tickers on user input, returning the instrument keys (e.g., `NSE_EQ|INE002A01018`).
+- **Live Quotes**: Calls Upstox API's `/market-quote/quotes` endpoint with the selected instrument key to retrieve live OHLC, last traded price, net changes, and trading volume.
+- **Historical Data**: Generates simulated historical sequences for charts based on the real-time last traded price.
 
 ---
 
@@ -233,17 +229,21 @@ CREATE TABLE transactions (
 ## Configuration Files
 
 ### Backend Configuration
-**`application.properties`**:
+**`application.properties`** (located in `backend/chanakya-iq-service/src/main/resources/`):
 - Server port: 8080
 - H2 file database: `jdbc:h2:file:./db/chanakyaiq`
 - JPA: `ddl-auto=update` (auto-creates tables)
 - H2 Console: enabled at `/h2-console`
-- OAuth2: Google client credentials from `.env` file
+- OAuth2: Google client credentials (configured with default placeholders or loadable from `.env` or system variables)
+- Upstox API: `chanakyaiq.api.token` holds the bearer token for market data requests
+- REST client properties: `rest.client.timeout.connect`, `rest.client.timeout.read`, `rest.client.pool.max-total`, etc.
 
 **`.env`** (backend root):
+Contains sensitive local environment configs:
 ```
 GOOGLE_CLIENT_ID=<your-client-id>
 GOOGLE_CLIENT_SECRET=<your-client-secret>
+UPSTOX_API_TOKEN=<your-upstox-token>
 ```
 
 ### Frontend Configuration
@@ -258,10 +258,18 @@ GOOGLE_CLIENT_SECRET=<your-client-secret>
 ### Running the Application
 
 **Backend**:
-```cmd
-cd backend
-mvnw.cmd spring-boot:run
-```
+1. First, build the parent project and compile all Maven modules (this compiles dependencies and runs the OpenAPI generator to produce the models under `chanakya-iq-api`):
+   ```cmd
+   cd backend
+   .\mvnw.cmd clean install -DskipTests
+   ```
+2. Run the main Spring Boot service module:
+   ```cmd
+   cd chanakya-iq-service
+   ..\mvnw.cmd spring-boot:run
+   ```
+   (Alternatively, execute from the parent backend folder: `.\mvnw.cmd -pl chanakya-iq-service spring-boot:run`)
+   
 Backend runs at `http://localhost:8080`
 
 **Frontend**:
@@ -276,8 +284,8 @@ Frontend runs at `http://localhost:5173`
 **Backend**:
 ```cmd
 cd backend
-mvnw.cmd clean package
-java -jar target/chanakyaiq-0.0.1-SNAPSHOT.jar
+.\mvnw.cmd clean package -DskipTests
+java -jar chanakya-iq-service/target/chanakya-iq-service-0.0.1-SNAPSHOT.jar
 ```
 
 **Frontend**:
@@ -350,11 +358,11 @@ npm run build
   - Overall P&L (absolute & percentage)
   - Total portfolio value
 
-### Mock Market (UpstoxServiceImpl)
-- **Market Hours**: Uses `ZonedDateTime` with IST timezone
-- **Price Volatility**: Random walk ±0.2% per tick
-- **Dynamic Stock Creation**: Auto-creates stocks if not in database
-- **Thread-Safe**: Synchronized methods for price updates
+### Upstox Market Data (UpstoxServiceImpl)
+- **Market Hours**: Uses `ZonedDateTime` with IST timezone (Mon-Fri, 9:15 AM - 3:30 PM IST).
+- **Real Upstox Integration**: Connects to the Upstox API via Spring's `RestClient` and maps responses to OpenAPI models.
+- **2-Step Workflow**: Performs live stock searches to retrieve instrument keys, and then requests real-time quotes using those keys.
+- **Historical Simulation**: Generates historical charting price series on the fly using a random walk starting from the latest real quote price.
 
 ---
 
@@ -419,7 +427,7 @@ npm run build
 ### Running Tests
 ```cmd
 cd backend
-mvnw.cmd test
+.\mvnw.cmd test
 ```
 
 ---
@@ -427,16 +435,14 @@ mvnw.cmd test
 ## Known Limitations & Future Enhancements
 
 ### Current Limitations
-1. **Mock Data Only**: No real market data integration (Upstox API planned)
-2. **Single User Session**: No multi-session support per user
-3. **In-Memory Stocks**: Stock database resets on restart
-4. **Basic Price Simulation**: Simple random walk, no realistic patterns
-5. **No Order Types**: Only market orders (no limit/stop orders)
-6. **No Watchlist**: Can't save favorite stocks
-7. **No Advanced Charts**: Basic historical data, no candlesticks
+1. **Real-time Price Simulation**: Real market quotes are fetched live from Upstox API, but historical charting data is simulated locally.
+2. **Single User Session**: No multi-session support per user.
+3. **No Order Types**: Only market orders (no limit/stop orders).
+4. **No Watchlist**: Can't save favorite stocks.
+5. **No Advanced Charts**: Basic historical line charts, no candlesticks.
 
 ### Potential Enhancements
-- Real Upstox API integration
+- Real Upstox API history integration
 - Advanced order types (limit, stop-loss, bracket)
 - Watchlist and alerts
 - Technical indicators (RSI, MACD, Moving Averages)
