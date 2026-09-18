@@ -133,22 +133,29 @@ export default function App() {
       </header>
 
       <main className="app-content">
-        <div className="layout-left">
+        <div className="layout-top">
           <Dashboard summary={portfolio} />
-          <HoldingsTable
-            holdings={portfolio.holdings}
-            onSelectStock={(symbol) => setSelectedStock(symbol)}
-          />
-          <TransactionHistory transactions={transactions} />
         </div>
 
-        <div className="layout-right">
-          <TradingPanel
-            apiBase={API_BASE}
-            selectedSymbol={selectedStock}
-            clearSelectedSymbol={(sym) => setSelectedStock(sym)}
-            onTradeSuccess={fetchPortfolioData}
-          />
+        <div className="layout-grid">
+          <div className="layout-main-terminal">
+            <TradingPanel
+              apiBase={API_BASE}
+              selectedSymbol={selectedStock}
+              clearSelectedSymbol={(sym) => setSelectedStock(sym)}
+              onTradeSuccess={fetchPortfolioData}
+              cashBalance={portfolio.cashBalance}
+              holdings={portfolio.holdings}
+            />
+          </div>
+
+          <div className="layout-side-panels">
+            <HoldingsTable
+              holdings={portfolio.holdings}
+              onSelectStock={(symbol) => setSelectedStock(symbol)}
+            />
+            <TransactionHistory transactions={transactions} />
+          </div>
         </div>
       </main>
     </div>

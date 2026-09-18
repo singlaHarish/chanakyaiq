@@ -1,19 +1,28 @@
 import React, { useState, useEffect } from 'react';
-import { StockSearchResponse, StockDetails, StockCandle } from '../types';
+import { StockSearchResponse, StockDetails, StockCandle, Holding, TradeExecutionResponseDTO } from '../types';
 
 interface TradingPanelProps {
   onTradeSuccess: () => void;
   selectedSymbol: string | null;
   clearSelectedSymbol: (symbol?: string | null) => void;
   apiBase: string;
+  cashBalance?: number;
+  holdings?: Holding[];
 }
 
-export default function TradingPanel({ onTradeSuccess, selectedSymbol, clearSelectedSymbol, apiBase }: TradingPanelProps) {
+export default function TradingPanel({
+  onTradeSuccess,
+  selectedSymbol,
+  clearSelectedSymbol,
+  apiBase,
+  cashBalance = 0,
+  holdings = [],
+}: TradingPanelProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<StockSearchResponse[]>([]);
   const [stockDetails, setStockDetails] = useState<StockDetails | null>(null);
   const [quantity, setQuantity] = useState(1);
-  const [tradeMessage, setTradeMessage] = useState<string | null>(null);
+  const [tradeSuccessResponse, setTradeSuccessResponse] = useState<TradeExecutionResponseDTO | null>(null);
   const [tradeError, setTradeError] = useState<string | null>(null);
   const [historicalData, setHistoricalData] = useState<StockCandle[]>([]);
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
@@ -40,6 +49,8 @@ export default function TradingPanel({ onTradeSuccess, selectedSymbol, clearSele
       setStockDetails(null);
       setHistoricalData([]);
       setHoveredIndex(null);
+      setTradeSuccessResponse(null);
+      setTradeError(null);
       return;
     }
 
@@ -67,11 +78,12 @@ export default function TradingPanel({ onTradeSuccess, selectedSymbol, clearSele
       setTradeError('Quantity must be greater than 0');
       return;
     }
-    setTradeMessage(null);
+    setTradeSuccessResponse(null);
     setTradeError(null);
 
     fetch(`${apiBase}/api/trade/${type}`, {
       method: 'POST',
+      credentials: 'include',
       headers: {
         'Content-Type': 'application/json',
       },
@@ -81,9 +93,22 @@ export default function TradingPanel({ onTradeSuccess, selectedSymbol, clearSele
       }),
     })
       .then(async (res) => {
-        const data = await res.json();
-        if (res.ok && data.success) {
-          setTradeMessage(`Successfully executed market ${type.toUpperCase()} order for ${quantity} shares of ${stockDetails.name}`);
+        const data: TradeExecutionResponseDTO = await res.json();
+        if (res.ok && (data.success || data.success === undefined)) {
+          const executedPrice = data.executedPrice ?? stockDetails.lastPrice;
+          const executedQty = data.quantity ?? quantity;
+          const totalBill = data.totalBill ?? (executedQty * executedPrice);
+          const updatedCash = data.updatedCashBalance ?? (type === 'buy' ? cashBalance - totalBill : cashBalance + totalBill);
+
+          setTradeSuccessResponse({
+            success: true,
+            message: data.message || `Market ${type.toUpperCase()} order executed successfully`,
+            symbol: data.symbol || stockDetails.name || stockDetails.symbol,
+            executedPrice,
+            quantity: executedQty,
+            totalBill,
+            updatedCashBalance: updatedCash,
+          });
           onTradeSuccess();
         } else {
           setTradeError(data.error || 'Failed to execute order');
@@ -94,6 +119,27 @@ export default function TradingPanel({ onTradeSuccess, selectedSymbol, clearSele
         console.error(err);
       });
   };
+
+  const currentPrice = stockDetails?.lastPrice ?? 0;
+  const totalEstimatedBill = quantity * currentPrice;
+
+  // Buy disable check
+  const isBuyDisabled = cashBalance < totalEstimatedBill || quantity <= 0;
+  const buyTooltip = cashBalance < totalEstimatedBill
+    ? `Insufficient cash balance. Required: ₹${totalEstimatedBill.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}, Available: ₹${cashBalance.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+    : '';
+
+  // Sell disable check
+  const userHolding = (holdings || []).find(
+    (h) => h.symbol === stockDetails?.symbol || h.symbol === stockDetails?.tradingSymbol || h.symbol === stockDetails?.instrumentKey
+  );
+  const ownedQty = userHolding ? userHolding.quantity : 0;
+  const isSellDisabled = ownedQty <= 0 || quantity > ownedQty || quantity <= 0;
+  const sellTooltip = ownedQty <= 0
+    ? `You do not own any shares of ${stockDetails?.symbol || 'this stock'}.`
+    : quantity > ownedQty
+    ? `Requested quantity (${quantity}) exceeds owned shares (${ownedQty}).`
+    : '';
 
   const isProfit = (stockDetails?.netChange ?? 0) >= 0;
 
@@ -384,7 +430,7 @@ export default function TradingPanel({ onTradeSuccess, selectedSymbol, clearSele
             className="btn-secondary btn-back"
             onClick={() => {
               clearSelectedSymbol(null);
-              setTradeMessage(null);
+              setTradeSuccessResponse(null);
               setTradeError(null);
             }}
           >
@@ -420,17 +466,78 @@ export default function TradingPanel({ onTradeSuccess, selectedSymbol, clearSele
                 className="quantity-input"
               />
             </div>
+
+            {/* Live estimated order cost calculation directly above Buy/Sell buttons */}
+            <div className="total-bill-container">
+              <span className="total-bill-label">Total Bill:</span>
+              <span className="total-bill-calc font-mono">
+                {quantity} × ₹{currentPrice.toFixed(2)} = <strong className="total-bill-amount">₹{totalEstimatedBill.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong>
+              </span>
+            </div>
+
             <div className="buttons-row">
-              <button className="btn-primary btn-buy" onClick={() => handleOrder('buy')}>
-                Market BUY
-              </button>
-              <button className="btn-danger btn-sell" onClick={() => handleOrder('sell')}>
-                Market SELL
-              </button>
+              <div className="button-wrapper" title={buyTooltip}>
+                <button
+                  className="btn-primary btn-buy"
+                  onClick={() => handleOrder('buy')}
+                  disabled={isBuyDisabled}
+                >
+                  Market BUY
+                </button>
+                {cashBalance < totalEstimatedBill && (
+                  <div className="button-indicator indicator-warning">Insufficient Cash</div>
+                )}
+              </div>
+
+              <div className="button-wrapper" title={sellTooltip}>
+                <button
+                  className="btn-danger btn-sell"
+                  onClick={() => handleOrder('sell')}
+                  disabled={isSellDisabled}
+                >
+                  Market SELL
+                </button>
+                {ownedQty <= 0 ? (
+                  <div className="button-indicator indicator-muted">0 Shares Owned</div>
+                ) : quantity > ownedQty ? (
+                  <div className="button-indicator indicator-warning">Max {ownedQty} Shares</div>
+                ) : null}
+              </div>
             </div>
           </div>
 
-          {tradeMessage && <div className="banner-success">{tradeMessage}</div>}
+          {/* Detailed, formatted success banner upon execution */}
+          {tradeSuccessResponse && (
+            <div className="banner-success-detailed">
+              <div className="banner-header">
+                <span className="success-badge font-mono">ORDER EXECUTED</span>
+                <p className="banner-msg">{tradeSuccessResponse.message}</p>
+              </div>
+              <div className="banner-details-grid">
+                <div className="banner-detail-item">
+                  <span className="detail-label">Symbol</span>
+                  <span className="detail-value font-mono">{tradeSuccessResponse.symbol}</span>
+                </div>
+                <div className="banner-detail-item">
+                  <span className="detail-label">Executed Price</span>
+                  <span className="detail-value font-mono">₹{Number(tradeSuccessResponse.executedPrice).toFixed(2)}</span>
+                </div>
+                <div className="banner-detail-item">
+                  <span className="detail-label">Quantity</span>
+                  <span className="detail-value font-mono">{tradeSuccessResponse.quantity}</span>
+                </div>
+                <div className="banner-detail-item">
+                  <span className="detail-label">Total Bill</span>
+                  <span className="detail-value font-mono">₹{Number(tradeSuccessResponse.totalBill).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                </div>
+                <div className="banner-detail-item">
+                  <span className="detail-label">Updated Cash Balance</span>
+                  <span className="detail-value font-mono highlight-cash">₹{Number(tradeSuccessResponse.updatedCashBalance).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                </div>
+              </div>
+            </div>
+          )}
+
           {tradeError && <div className="banner-error">{tradeError}</div>}
         </div>
       )}

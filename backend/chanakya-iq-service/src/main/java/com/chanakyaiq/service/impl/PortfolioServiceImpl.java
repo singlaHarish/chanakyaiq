@@ -40,6 +40,10 @@ public class PortfolioServiceImpl implements PortfolioService {
         BigDecimal totalCurrentValue = BigDecimal.ZERO;
 
         for (Holding holding : holdings) {
+            if (holding.getQuantity() <= 0) {
+                continue;
+            }
+
             BigDecimal currentPrice = upstoxService.getStockPrice(holding.getSymbol());
             BigDecimal costBasis = holding.getAveragePrice().multiply(BigDecimal.valueOf(holding.getQuantity()));
             BigDecimal currentValue = currentPrice.multiply(BigDecimal.valueOf(holding.getQuantity()));

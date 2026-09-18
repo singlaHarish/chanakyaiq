@@ -3,15 +3,18 @@ import React from 'react';
 export default function TransactionHistory({ transactions }) {
   if (!transactions || transactions.length === 0) {
     return (
-      <div className="holdings-empty card-glass">
-        <p>No transaction history found.</p>
+      <div className="table-container card-glass">
+        <h3>Order History</h3>
+        <div className="holdings-empty">
+          <p>No order history found.</p>
+        </div>
       </div>
     );
   }
 
   return (
     <div className="table-container card-glass">
-      <h3>Transaction Logs (Audit Trail)</h3>
+      <h3>Order History</h3>
       <table className="custom-table">
         <thead>
           <tr>

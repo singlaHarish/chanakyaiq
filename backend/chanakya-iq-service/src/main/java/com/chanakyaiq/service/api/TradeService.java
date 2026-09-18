@@ -12,8 +12,9 @@ public interface TradeService {
      * @param userId   the unique identifier of the user (OAuth2 sub claim)
      * @param symbol   stock symbol (e.g., "RELIANCE")
      * @param quantity number of shares to purchase (must be > 0)
+     * @return execution response DTO with trade details
      */
-    void executeBuyOrder(String userId, String symbol, int quantity);
+    com.chanakyaiq.dto.TradeExecutionResponseDTO executeBuyOrder(String userId, String symbol, int quantity);
 
     /**
      * Execute a market SELL order.
@@ -21,6 +22,7 @@ public interface TradeService {
      * @param userId   the unique identifier of the user
      * @param symbol   stock symbol
      * @param quantity number of shares to sell (must be > 0)
+     * @return execution response DTO with trade details
      */
-    void executeSellOrder(String userId, String symbol, int quantity);
+    com.chanakyaiq.dto.TradeExecutionResponseDTO executeSellOrder(String userId, String symbol, int quantity);
 }

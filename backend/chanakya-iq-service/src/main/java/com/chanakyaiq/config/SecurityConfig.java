@@ -37,6 +37,12 @@ public class SecurityConfig {
             .oauth2Login(oauth2 -> oauth2
                 .successHandler(new SimpleUrlAuthenticationSuccessHandler("http://localhost:5173/"))
             )
+            .exceptionHandling(exceptions -> exceptions
+                .defaultAuthenticationEntryPointFor(
+                    new org.springframework.security.web.authentication.HttpStatusEntryPoint(org.springframework.http.HttpStatus.UNAUTHORIZED),
+                    request -> request.getServletPath() != null && request.getServletPath().startsWith("/api")
+                )
+            )
             .logout(logout -> logout
                 .logoutUrl("/api/auth/logout")
                 .logoutSuccessHandler((req, res, auth) -> {

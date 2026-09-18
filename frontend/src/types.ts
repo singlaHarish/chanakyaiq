@@ -2,8 +2,13 @@
 export interface Holding {
   symbol: string;
   quantity: number;
-  avgPrice: number;
+  avgPrice?: number;
+  averagePrice?: number;
   currentPrice?: number;
+  investedAmount?: number;
+  currentValue?: number;
+  profitLoss?: number;
+  profitLossPercent?: number;
 }
 
 export interface PortfolioSummary {
@@ -73,3 +78,15 @@ export interface StockCandle {
   close: number;
   volume: number;
 }
+
+export interface TradeExecutionResponseDTO {
+  success: boolean;
+  message?: string;
+  error?: string;
+  symbol?: string;
+  executedPrice?: number;
+  quantity?: number;
+  totalBill?: number;
+  updatedCashBalance?: number;
+}
+
