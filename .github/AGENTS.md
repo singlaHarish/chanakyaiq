@@ -2,6 +2,7 @@
 
 > **📚 Additional Documentation:**
 > - [OAuth2 Authentication Flow](./OAUTH2-FLOW.md) - Detailed explanation of Google OAuth2 implementation
+> - [Documentation Index](./INDEX.md) - Complete file listing and quick navigation
 
 ## Project Overview
 
@@ -13,6 +14,7 @@
 - Portfolio management with P&L calculations
 - Transaction history and holdings tracking
 - Educational tool for learning stock market trading
+- Interactive charting with live market data
 
 ---
 
@@ -20,11 +22,11 @@
 
 ### Backend
 - **Language**: Java 21
-- **Framework**: Spring Boot 4.0.6
+- **Framework**: Spring Boot 4.0.6 (spring-boot-starter-parent)
 - **Build Tool**: Maven (wrapper included, multi-module structure)
   - **`chanakya-iq-api`**: Module for OpenAPI-based code generation containing model classes generated automatically from the API specifications.
   - **`chanakya-iq-service`**: Module for the core Spring Boot application containing business logic, REST APIs, and database integration.
-- **Database**: H2 (file-based persistence at `./db/chanakyaiq`)
+- **Database**: H2 (file-based persistence at `backend/db/chanakyaiq`)
 - **Security**: Spring Security with OAuth2
 - **Authentication**: Google OAuth2 (session-based with JSESSIONID cookie)
 - **Logging**: Log4j2 (via `spring-boot-starter-log4j2`, default Spring Boot starter logging excluded)
@@ -32,15 +34,18 @@
 - **ORM**: JPA/Hibernate
 - **Additional Libraries**: 
   - Lombok (for reducing boilerplate in models and entities)
+  - Spring Security OAuth2 Client (`spring-boot-starter-security-oauth2-client`)
   - OpenAPI Generator Maven Plugin (generates models from OpenAPI YAML specs)
 
 ### Frontend
 - **Language**: TypeScript
 - **Framework**: React 19.2.6
+- **DOM Library**: react-dom 19.2.6
 - **Build Tool**: Vite 8.0.12
 - **Dev Server**: Vite (runs on port 5173)
 - **Styling**: Custom CSS with dark-mode glass-morphic design
 - **State Management**: React hooks (useState, useEffect)
+- **Type Safety**: Strict TypeScript via defined interfaces in `types.ts`
 
 ### Development Environment
 - **Backend Port**: 8080
@@ -168,23 +173,32 @@ chanakyaiq/
 ## API Endpoints
 
 ### Authentication
-- `GET /api/auth/status` - Check auth status, auto-provision user (PUBLIC)
-- `POST /api/auth/logout` - Clear session and logout
+- `GET /api/auth/status` - Check authentication status, auto-provision user if first login (PUBLIC)
+  - Returns: `{ authenticated, userId, email, cashBalance }`
+- `POST /api/auth/logout` - Clear session and logout (AUTH REQUIRED)
 
 ### Portfolio
 - `GET /api/portfolio/summary` - Portfolio summary with holdings, P&L, balances (AUTH REQUIRED)
+  - Returns: `{ holdings, cashBalance, totalInvested, totalCurrentValue, overallProfitLoss, overallProfitLossPercent, totalPortfolioValue }`
 - `GET /api/portfolio/transactions` - Transaction history ordered by timestamp desc (AUTH REQUIRED)
+  - Enriches transactions with stock names via Upstox API lookup
+  - Returns: Array of transactions with `{ id, symbol, name, quantity, price, type, timestamp }`
 
 ### Trading
 - `POST /api/trade/buy` - Execute market buy order (AUTH REQUIRED)
   - Body: `{ "symbol": "RELIANCE", "quantity": 10 }`
+  - Returns: `{ success, message, symbol, executedPrice, quantity, totalBill, updatedCashBalance }`
 - `POST /api/trade/sell` - Execute market sell order (AUTH REQUIRED)
   - Body: `{ "symbol": "RELIANCE", "quantity": 5 }`
+  - Returns: `{ success, message, symbol, executedPrice, quantity, totalBill, updatedCashBalance }`
 
 ### Stocks
 - `GET /api/stocks/search?query=<term>` - Search stocks by symbol/name (PUBLIC)
+  - Returns: Array of `{ instrumentKey, tradingSymbol, name }`
 - `GET /api/stocks/price/{symbol}` - Get current price and details (PUBLIC)
+  - Returns: `{ instrumentKey, symbol, name, lastPrice, netChange, changePercent, open, high, low, close, volume, averagePrice, isMarketOpen }`
 - `GET /api/stocks/history/{symbol}` - Get historical prices for charting (PUBLIC)
+  - Returns: Array of `{ timestamp, open, high, low, close, volume }`
 
 ---
 
@@ -382,21 +396,33 @@ npm run build
 
 ### Key Components
 1. **Dashboard**: 3-card summary (total value, invested, current, cash)
-2. **HoldingsTable**: Real-time holdings grid with P&L indicators
-3. **TradingPanel**: Stock search, price chart, buy/sell buttons
-4. **TransactionHistory**: Chronological log with type badges
+2. **HoldingsTable**: Real-time holdings grid with P&L indicators, "My Holdings" section
+3. **TradingPanel**: Stock search, interactive chart, buy/sell buttons with tooltips
+4. **TransactionHistory**: Chronological log with type badges (Order History)
 
 ### Real-time Updates
 - Portfolio data polled every 5 seconds when user is authenticated
+- Stock details and prices refresh every 5 seconds for selected stock
 - Prices update automatically during market hours
 - UI reflects changes without page refresh
+
+### TradingPanel Features
+- **Search**: Live search with debouncing (300ms), minimum 2 characters
+- **Chart**: Interactive SVG line chart with hover tooltips, gradient fill
+- **Order Validation**: 
+  - Buy: Checks cash balance with dynamic tooltip
+  - Sell: Checks owned shares with dynamic tooltip
+- **Success Banner**: Detailed formatted feedback after order execution
+- **Error Handling**: User-friendly error messages for trade failures
+
+---
 
 ---
 
 ## Common Development Tasks
 
 ### Adding a New Stock Endpoint
-1. Add method to `UpstoxService` interface
+1. Add method to `UpstoxService` interface in `service/api/`
 2. Implement in `UpstoxServiceImpl`
 3. Add endpoint in `StockController`
 4. Update frontend API calls if needed
@@ -415,6 +441,18 @@ npm run build
 1. Modify entity classes (`@Entity` models)
 2. Hibernate auto-updates schema (ddl-auto=update)
 3. For production: Use Liquibase/Flyway migrations
+
+### Adding New UI Features
+1. Add TypeScript interface in `types.ts` if new data types needed
+2. Create new component in `frontend/src/components/`
+3. Add route/section in `App.tsx` if needed
+4. Follow existing styling conventions (glass-morphism)
+
+### Updating Trading Logic
+1. Modify `TradeService` interface in `service/api/`
+2. Implement in `TradeServiceImpl`
+3. Update controller endpoint if behavior changes
+4. Test with frontend `TradingPanel.tsx`
 
 ---
 
@@ -553,6 +591,6 @@ MIT License - See project README for details
 
 ---
 
-**Last Updated**: June 13, 2026
-**Project Version**: 0.0.1-SNAPSHOT
+**Last Updated**: September 18, 2026  
+**Project Version**: 0.0.1-SNAPSHOT  
 **Status**: Active Development

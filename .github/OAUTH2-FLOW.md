@@ -1,6 +1,6 @@
 # OAuth2 Google Authentication Flow in ChanakyaIQ
 
-> **📖 Main Documentation:** See [AGENTS.md](./AGENTS.md) for complete project context, architecture, and development guide.
+> **📖 Main Documentation:** See [AGENTS.md](./AGENTS.md) for complete project context, architecture, and development guide. See [INDEX.md](./INDEX.md) for complete documentation index and navigation.
 
 ## 🔐 Overview
 

@@ -46,6 +46,13 @@ Visual guide to ChanakyaIQ documentation structure and relationships.
 - Looking for a specific topic quickly
 - Need to find the right document
 
+### Use [INDEX.md](./INDEX.md)
+**Purpose**: Complete documentation index and quick links  
+**When**:
+- Need to see all documentation files
+- Looking for a specific topic using search tips
+- Want quick navigation paths for different tasks
+
 ### Use [AGENTS.md](./AGENTS.md)
 **Purpose**: Complete project context and reference  
 **When**:
@@ -226,8 +233,18 @@ Visual guide to ChanakyaIQ documentation structure and relationships.
 - Structure changes
 - Navigation improvements
 
+### When to Update INDEX.md
+- New documentation files added
+- Quick links need updating
+- File listing needs to be current
+
+### When to Update DOCUMENTATION-MAP.md
+- New documentation files added
+- Cross-reference structure changes
+- Navigation relationships updated
+
 ---
 
 **Purpose**: This map helps you navigate the documentation efficiently  
 **Audience**: Developers, AI agents, contributors  
-**Last Updated**: June 13, 2026
+**Last Updated**: September 18, 2026

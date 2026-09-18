@@ -3,6 +3,7 @@
 This directory contains comprehensive documentation for the ChanakyaIQ project, designed to provide complete context for developers, AI agents, and contributors.
 
 > **🗺️ Need help navigating?** See [DOCUMENTATION-MAP.md](./DOCUMENTATION-MAP.md) for visual guide and documentation relationships.
+> **📝 Latest Update:** September 18, 2026 - Updated to reflect current codebase
 
 ## 📚 Documentation Files
 
@@ -31,6 +32,11 @@ Deep dive into authentication:
 
 **Use this when working on authentication, security, or understanding the login flow.**
 
+### [INDEX.md](./INDEX.md)
+Complete index of all documentation files with quick links and search tips.
+
+---
+
 ## 🎯 Quick Navigation
 
 | I want to... | Go to... |
@@ -47,10 +53,12 @@ Deep dive into authentication:
 
 ```
 chanakyaiq/
-├── .github/
+├── .github/               ← Documentation (this directory)
 │   ├── README.md          ← You are here
 │   ├── AGENTS.md          ← Complete project documentation
-│   └── OAUTH2-FLOW.md     ← Authentication deep dive
+│   ├── OAUTH2-FLOW.md     ← Authentication deep dive
+│   ├── INDEX.md           ← Documentation index
+│   └── DOCUMENTATION-MAP.md
 ├── backend/               ← Multi-module Maven parent (Java 21)
 │   ├── chanakya-iq-api/   ← Generated models (OpenAPI plugin)
 │   └── chanakya-iq-service/ ← Spring Boot service and APIs
@@ -86,7 +94,7 @@ When making significant changes:
 1. Update [AGENTS.md](./AGENTS.md) for structural/architectural changes
 2. Update [OAUTH2-FLOW.md](./OAUTH2-FLOW.md) for authentication changes
 3. Add new documentation files for major new features
-4. Link new docs from this README
+4. Link new docs from this README and [INDEX.md](./INDEX.md)
 
 ## 🤝 Contributing
 
@@ -94,5 +102,5 @@ See [AGENTS.md - Contributing Guidelines](./AGENTS.md#contact--contribution) for
 
 ---
 
-**Last Updated**: June 13, 2026  
+**Last Updated**: September 18, 2026  
 **Maintained by**: Harish Singla
