@@ -1,5 +1,6 @@
 package com.chanakyaiq.service.impl;
 
+import com.chanakyaiq.dto.StockDetailsDTO;
 import com.chanakyaiq.model.Holding;
 import com.chanakyaiq.model.User;
 import com.chanakyaiq.repository.HoldingRepository;
@@ -58,8 +59,16 @@ public class PortfolioServiceImpl implements PortfolioService {
                         .multiply(new BigDecimal("100"));
             }
 
+            String stockName = holding.getName();
+            if (stockName == null || stockName.isBlank()) {
+                StockDetailsDTO stockDetails = upstoxService.getStockDetails(holding.getSymbol());
+                stockName = stockDetails != null ? stockDetails.name() : holding.getSymbol();
+            }
+
             Map<String, Object> detail = new HashMap<>();
             detail.put("symbol", holding.getSymbol());
+            detail.put("tradingSymbol", holding.getSymbol());
+            detail.put("name", stockName);
             detail.put("quantity", holding.getQuantity());
             detail.put("averagePrice", holding.getAveragePrice());
             detail.put("currentPrice", currentPrice);

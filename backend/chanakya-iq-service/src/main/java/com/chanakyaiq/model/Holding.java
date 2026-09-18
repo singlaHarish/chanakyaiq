@@ -27,6 +27,8 @@ public class Holding {
 
     private String symbol;
 
+    private String name;
+
     private Integer quantity;
 
     private BigDecimal averagePrice;

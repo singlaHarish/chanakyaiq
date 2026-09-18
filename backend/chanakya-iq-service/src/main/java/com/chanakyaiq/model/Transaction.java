@@ -28,6 +28,8 @@ public class Transaction {
 
     private String symbol;
 
+    private String name;
+
     private String type; // BUY or SELL
 
     private Integer quantity;

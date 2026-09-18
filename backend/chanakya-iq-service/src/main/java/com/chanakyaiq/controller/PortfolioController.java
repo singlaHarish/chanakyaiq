@@ -3,6 +3,7 @@ package com.chanakyaiq.controller;
 import com.chanakyaiq.model.Transaction;
 import com.chanakyaiq.repository.TransactionRepository;
 import com.chanakyaiq.service.api.PortfolioService;
+import com.chanakyaiq.service.api.UpstoxService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -36,6 +37,9 @@ public class PortfolioController {
         return ResponseEntity.ok(portfolioService.getPortfolioSummary(userId));
     }
 
+    @Autowired
+    private UpstoxService upstoxService;
+
     @GetMapping("/transactions")
     public ResponseEntity<?> getTransactions(@AuthenticationPrincipal OAuth2User oauth2User) {
         if (oauth2User == null) {
@@ -45,6 +49,21 @@ public class PortfolioController {
         }
         String userId = oauth2User.getAttribute("sub");
         List<Transaction> transactions = transactionRepository.findByUserIdOrderByTimestampDesc(userId);
+
+        // Enrich transactions that are missing stock names
+        for (Transaction tx : transactions) {
+            if (tx.getName() == null || tx.getName().isBlank()) {
+                try {
+                    var stockDetails = upstoxService.getStockDetails(tx.getSymbol());
+                    if (stockDetails != null && stockDetails.name() != null) {
+                        tx.setName(stockDetails.name());
+                    }
+                } catch (Exception ignored) {
+                    // If lookup fails, leave name as-is
+                }
+            }
+        }
+
         return ResponseEntity.ok(transactions);
     }
 }

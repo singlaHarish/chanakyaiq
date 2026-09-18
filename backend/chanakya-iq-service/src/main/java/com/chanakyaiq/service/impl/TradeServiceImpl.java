@@ -1,5 +1,6 @@
 package com.chanakyaiq.service.impl;
 
+import com.chanakyaiq.dto.StockDetailsDTO;
 import com.chanakyaiq.dto.TradeExecutionResponseDTO;
 import com.chanakyaiq.model.Holding;
 import com.chanakyaiq.model.Transaction;
@@ -40,6 +41,9 @@ public class TradeServiceImpl implements TradeService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
 
+        StockDetailsDTO stockDetails = upstoxService.getStockDetails(symbol);
+        String stockName = stockDetails != null ? stockDetails.name() : symbol;
+
         BigDecimal price = upstoxService.getStockPrice(symbol);
         if (price == null || price.compareTo(BigDecimal.ZERO) <= 0) {
             throw new IllegalStateException("Unable to retrieve live market price for trade execution. Please try again.");
@@ -58,6 +62,7 @@ public class TradeServiceImpl implements TradeService {
         Optional<Holding> existingHoldingOpt = holdingRepository.findByUserIdAndSymbol(userId, symbol.toUpperCase());
         if (existingHoldingOpt.isPresent()) {
             Holding holding = existingHoldingOpt.get();
+            holding.setName(stockName);
             if (holding.getQuantity() == 0) {
                 holding.setQuantity(quantity);
                 holding.setAveragePrice(price);
@@ -73,6 +78,7 @@ public class TradeServiceImpl implements TradeService {
             Holding newHolding = Holding.builder()
                     .userId(userId)
                     .symbol(symbol.toUpperCase())
+                    .name(stockName)
                     .quantity(quantity)
                     .averagePrice(price)
                     .build();
@@ -83,6 +89,7 @@ public class TradeServiceImpl implements TradeService {
         Transaction transaction = Transaction.builder()
                 .userId(userId)
                 .symbol(symbol.toUpperCase())
+                .name(stockName)
                 .type("BUY")
                 .quantity(quantity)
                 .price(price)
@@ -118,6 +125,9 @@ public class TradeServiceImpl implements TradeService {
             throw new IllegalStateException("Insufficient shares to sell. Available: " + holding.getQuantity() + ", Requested: " + quantity);
         }
 
+        StockDetailsDTO stockDetails = upstoxService.getStockDetails(symbol);
+        String stockName = stockDetails != null ? stockDetails.name() : symbol;
+
         BigDecimal price = upstoxService.getStockPrice(symbol);
         if (price == null || price.compareTo(BigDecimal.ZERO) <= 0) {
             throw new IllegalStateException("Unable to retrieve live market price for trade execution. Please try again.");
@@ -131,12 +141,16 @@ public class TradeServiceImpl implements TradeService {
 
         // Update holding quantity - DO NOT delete holding record when quantity becomes 0
         holding.setQuantity(holding.getQuantity() - quantity);
+        if (holding.getName() == null) {
+            holding.setName(stockName);
+        }
         holdingRepository.save(holding);
 
         // Record Transaction
         Transaction transaction = Transaction.builder()
                 .userId(userId)
                 .symbol(symbol.toUpperCase())
+                .name(stockName)
                 .type("SELL")
                 .quantity(quantity)
                 .price(price)

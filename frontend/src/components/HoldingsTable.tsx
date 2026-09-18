@@ -1,5 +1,5 @@
 import React from 'react';
-import { Holding } from '../types';
+import { Holding, formatSymbolKey } from '../types';
 
 interface HoldingsTableProps {
   holdings: Holding[];
@@ -23,7 +23,7 @@ export default function HoldingsTable({ holdings, onSelectStock }: HoldingsTable
       <table className="custom-table">
         <thead>
           <tr>
-            <th>Symbol</th>
+            <th>Asset / Symbol</th>
             <th className="text-right">Qty</th>
             <th className="text-right">Avg. Price</th>
             <th className="text-right">LTP (Last Traded Price)</th>
@@ -42,10 +42,15 @@ export default function HoldingsTable({ holdings, onSelectStock }: HoldingsTable
             const invested = h.investedAmount ?? (h.quantity * avgPrice);
             const value = h.currentValue ?? (h.quantity * curPrice);
             const pnlPercent = h.profitLossPercent ?? (invested > 0 ? (pnl / invested) * 100 : 0);
+            const compressedKey = formatSymbolKey(h.symbol);
+            const displayName = h.name || h.tradingSymbol || compressedKey;
 
             return (
               <tr key={h.symbol} className="clickable-row" onClick={() => onSelectStock(h.symbol)}>
-                <td className="symbol-cell">{h.symbol}</td>
+                <td className="symbol-cell">
+                  <div className="stock-display-name">{displayName}</div>
+                  <div className="stock-display-key">{compressedKey}</div>
+                </td>
                 <td className="text-right font-mono">{h.quantity}</td>
                 <td className="text-right font-mono">₹{Number(avgPrice).toFixed(2)}</td>
                 <td className="text-right font-mono">₹{Number(curPrice).toFixed(2)}</td>

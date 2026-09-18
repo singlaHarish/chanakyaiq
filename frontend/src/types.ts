@@ -1,6 +1,8 @@
 // Types for ChanakyaIQ front-end
 export interface Holding {
   symbol: string;
+  name?: string;
+  tradingSymbol?: string;
   quantity: number;
   avgPrice?: number;
   averagePrice?: number;
@@ -24,10 +26,17 @@ export interface PortfolioSummary {
 export interface Transaction {
   id: number;
   symbol: string;
+  name?: string;
+  tradingSymbol?: string;
   quantity: number;
   price: number;
   type: 'BUY' | 'SELL';
   timestamp: string;
+}
+
+export function formatSymbolKey(sym?: string): string {
+  if (!sym) return '';
+  return sym.includes('|') ? sym.split('|')[1] : sym;
 }
 
 export interface StockSearchResponse {
