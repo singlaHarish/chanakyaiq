@@ -1,6 +1,7 @@
 package com.chanakyaiq.controller;
 
 import com.chanakyaiq.service.api.UpstoxService;
+import com.chanakyaiq.dto.StockCandleDTO;
 import com.chanakyaiq.dto.StockDetailsDTO;
 import com.chanakyaiq.dto.StockSearchResponseDTO;
 import lombok.RequiredArgsConstructor;
@@ -32,7 +33,7 @@ public class StockController {
     }
 
     @GetMapping("/history/{symbol}")
-    public ResponseEntity<List<com.chanakyaiq.dto.StockCandleDTO>> getHistoricalPrices(@PathVariable String symbol) {
+    public ResponseEntity<List<StockCandleDTO>> getHistoricalPrices(@PathVariable String symbol) {
         return ResponseEntity.ok(upstoxService.getHistoricalPrices(symbol));
     }
 }

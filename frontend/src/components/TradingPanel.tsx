@@ -1,14 +1,22 @@
 import React, { useState, useEffect } from 'react';
 import { StockSearchResponse, StockDetails, StockCandle } from '../types';
 
-export default function TradingPanel({ onTradeSuccess, selectedSymbol, clearSelectedSymbol, apiBase }) {
+interface TradingPanelProps {
+  onTradeSuccess: () => void;
+  selectedSymbol: string | null;
+  clearSelectedSymbol: (symbol?: string | null) => void;
+  apiBase: string;
+}
+
+export default function TradingPanel({ onTradeSuccess, selectedSymbol, clearSelectedSymbol, apiBase }: TradingPanelProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<StockSearchResponse[]>([]);
   const [stockDetails, setStockDetails] = useState<StockDetails | null>(null);
   const [quantity, setQuantity] = useState(1);
-  const [tradeMessage, setTradeMessage] = useState(null);
-  const [tradeError, setTradeError] = useState(null);
+  const [tradeMessage, setTradeMessage] = useState<string | null>(null);
+  const [tradeError, setTradeError] = useState<string | null>(null);
   const [historicalData, setHistoricalData] = useState<StockCandle[]>([]);
+  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
 
   // Fetch search results as user types
   useEffect(() => {
@@ -24,13 +32,14 @@ export default function TradingPanel({ onTradeSuccess, selectedSymbol, clearSele
     }, 300);
 
     return () => clearTimeout(delayDebounce);
-  }, [searchQuery]);
+  }, [searchQuery, apiBase]);
 
   // Load details if symbol changes or is clicked
   useEffect(() => {
     if (!selectedSymbol) {
       setStockDetails(null);
       setHistoricalData([]);
+      setHoveredIndex(null);
       return;
     }
 
@@ -50,9 +59,10 @@ export default function TradingPanel({ onTradeSuccess, selectedSymbol, clearSele
     // Refresh stock detail price every 5 seconds if selected
     const interval = setInterval(fetchDetails, 5000);
     return () => clearInterval(interval);
-  }, [selectedSymbol]);
+  }, [selectedSymbol, apiBase]);
 
-  const handleOrder = (type) => {
+  const handleOrder = (type: 'buy' | 'sell') => {
+    if (!stockDetails) return;
     if (quantity <= 0) {
       setTradeError('Quantity must be greater than 0');
       return;
@@ -67,7 +77,7 @@ export default function TradingPanel({ onTradeSuccess, selectedSymbol, clearSele
       },
       body: JSON.stringify({
         symbol: stockDetails.instrumentKey,
-        quantity: parseInt(quantity),
+        quantity: quantity,
       }),
     })
       .then(async (res) => {
@@ -85,42 +95,252 @@ export default function TradingPanel({ onTradeSuccess, selectedSymbol, clearSele
       });
   };
 
-  const isProfit = stockDetails?.netChange >= 0;
+  const isProfit = (stockDetails?.netChange ?? 0) >= 0;
 
-  // Simple sparkline visual using historical prices
-  const renderSparkline = () => {
-    if (historicalData.length === 0) return <p className="no-data">No historical data available</p>;
+  const renderInteractiveChart = () => {
+    if (historicalData.length === 0) {
+      return (
+        <div className="chart-empty">
+          <p>No historical data available</p>
+        </div>
+      );
+    }
+
     const closePrices = historicalData.map((candle) => candle.close);
-    const max = Math.max(...closePrices);
-    const min = Math.min(...closePrices);
-    const range = max - min === 0 ? 1 : max - min;
-    const height = 80;
-    const width = 280;
-    const padding = 5;
+    const rawMin = Math.min(...closePrices);
+    const rawMax = Math.max(...closePrices);
+    const rawRange = rawMax - rawMin || 1;
 
-    const points = closePrices.map((val, index) => {
-      const x = padding + (index * (width - padding * 2)) / (closePrices.length - 1);
-      const y = height - padding - ((val - min) * (height - padding * 2)) / range;
-      return `${x},${y}`;
-    }).join(' ');
+    // Add 5% padding top and bottom so line doesn't clip
+    const min = rawMin - rawRange * 0.05;
+    const max = rawMax + rawRange * 0.05;
+    const range = max - min;
 
-    const startDate = new Date(historicalData[0].timestamp).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
-    const endDate = new Date(historicalData[historicalData.length - 1].timestamp).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+    const svgWidth = 520;
+    const svgHeight = 260;
+    const marginTop = 20;
+    const marginBottom = 40;
+    const marginLeft = 65;
+    const marginRight = 20;
+
+    const plotWidth = svgWidth - marginLeft - marginRight;
+    const plotHeight = svgHeight - marginTop - marginBottom;
+
+    const points = historicalData.map((candle, index) => {
+      const x = marginLeft + (index * plotWidth) / (historicalData.length - 1 || 1);
+      const y = marginTop + plotHeight - ((candle.close - min) * plotHeight) / range;
+      return { x, y, candle, index };
+    });
+
+    const pointsString = points.map((p) => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ');
+    const areaString = `M ${points[0].x.toFixed(1)},${marginTop + plotHeight} L ${pointsString} L ${points[points.length - 1].x.toFixed(1)},${marginTop + plotHeight} Z`;
+    const linePath = `M ${pointsString}`;
+
+    // Y-Axis Ticks (5 Ticks)
+    const yTickCount = 5;
+    const yTicks = Array.from({ length: yTickCount }, (_, i) => {
+      const val = min + (range * i) / (yTickCount - 1);
+      const y = marginTop + plotHeight - (i * plotHeight) / (yTickCount - 1);
+      return { val, y };
+    });
+
+    // X-Axis Ticks (~5 evenly spaced ticks)
+    const xTickCount = Math.min(5, historicalData.length);
+    const xTicks = Array.from({ length: xTickCount }, (_, i) => {
+      const idx = Math.round((i * (historicalData.length - 1)) / (xTickCount - 1 || 1));
+      const point = points[idx];
+      const dateStr = new Date(point.candle.timestamp).toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+      });
+      return { dateStr, x: point.x, idx };
+    });
+
+    const activeIndex = hoveredIndex !== null && hoveredIndex >= 0 && hoveredIndex < historicalData.length
+      ? hoveredIndex
+      : historicalData.length - 1;
+    const activeCandle = historicalData[activeIndex];
+    const activePoint = points[activeIndex];
+
+    const chartColor = isProfit ? '#00e676' : '#ff1744';
+    const gradientId = isProfit ? 'profitGradient' : 'lossGradient';
+
+    const handleMouseMove = (e: React.MouseEvent<SVGSVGElement>) => {
+      const rect = e.currentTarget.getBoundingClientRect();
+      const mouseX = e.clientX - rect.left;
+      const scaleX = svgWidth / rect.width;
+      const svgMouseX = mouseX * scaleX;
+
+      const clampedX = Math.max(marginLeft, Math.min(svgWidth - marginRight, svgMouseX));
+      const ratio = (clampedX - marginLeft) / plotWidth;
+      const nearestIdx = Math.round(ratio * (historicalData.length - 1));
+      setHoveredIndex(Math.max(0, Math.min(historicalData.length - 1, nearestIdx)));
+    };
 
     return (
-      <div className="sparkline-wrapper" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-        <svg className="sparkline" width={width} height={height}>
-          <polyline
-            fill="none"
-            stroke={isProfit ? '#00e676' : '#ff1744'}
-            strokeWidth="2.5"
-            points={points}
-          />
-        </svg>
-        <div className="chart-dates" style={{ display: 'flex', justifyContent: 'space-between', width: '100%', fontSize: '0.75rem', opacity: 0.6, marginTop: '4px', padding: '0 8px' }}>
-          <span>{startDate}</span>
-          <span>{endDate}</span>
+      <div className="interactive-chart-wrapper">
+        {/* Tooltip Header Bar */}
+        <div className="chart-tooltip-bar">
+          <div className="tooltip-item">
+            <span className="tooltip-label">Date</span>
+            <span className="tooltip-value font-mono">
+              {new Date(activeCandle.timestamp).toLocaleDateString('en-US', {
+                month: 'short',
+                day: 'numeric',
+                year: 'numeric',
+              })}
+            </span>
+          </div>
+          <div className="tooltip-item">
+            <span className="tooltip-label">Close</span>
+            <span className="tooltip-value font-mono" style={{ color: chartColor }}>
+              ₹{activeCandle.close.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            </span>
+          </div>
+          <div className="tooltip-item">
+            <span className="tooltip-label">High</span>
+            <span className="tooltip-value font-mono">
+              ₹{activeCandle.high.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            </span>
+          </div>
+          <div className="tooltip-item">
+            <span className="tooltip-label">Low</span>
+            <span className="tooltip-value font-mono">
+              ₹{activeCandle.low.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            </span>
+          </div>
+          <div className="tooltip-item">
+            <span className="tooltip-label">Volume</span>
+            <span className="tooltip-value font-mono">
+              {activeCandle.volume.toLocaleString('en-IN')}
+            </span>
+          </div>
         </div>
+
+        {/* SVG Chart Canvas */}
+        <svg
+          className="interactive-chart-svg"
+          viewBox={`0 0 ${svgWidth} ${svgHeight}`}
+          onMouseMove={handleMouseMove}
+          onMouseLeave={() => setHoveredIndex(null)}
+        >
+          <defs>
+            <linearGradient id="profitGradient" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#00e676" stopOpacity="0.25" />
+              <stop offset="100%" stopColor="#00e676" stopOpacity="0.0" />
+            </linearGradient>
+            <linearGradient id="lossGradient" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#ff1744" stopOpacity="0.25" />
+              <stop offset="100%" stopColor="#ff1744" stopOpacity="0.0" />
+            </linearGradient>
+          </defs>
+
+          {/* Grid Lines & Y-Axis Ticks */}
+          {yTicks.map((tick, i) => (
+            <g key={`y-tick-${i}`}>
+              <line
+                x1={marginLeft}
+                y1={tick.y}
+                x2={svgWidth - marginRight}
+                y2={tick.y}
+                stroke="rgba(255, 255, 255, 0.07)"
+                strokeDasharray="3 3"
+              />
+              <text
+                x={marginLeft - 8}
+                y={tick.y + 4}
+                textAnchor="end"
+                fill="var(--text-secondary)"
+                fontSize="10"
+                fontFamily="'Roboto Mono', monospace"
+              >
+                ₹{tick.val >= 1000 ? tick.val.toFixed(0) : tick.val.toFixed(2)}
+              </text>
+            </g>
+          ))}
+
+          {/* X-Axis Ticks */}
+          {xTicks.map((tick, i) => (
+            <g key={`x-tick-${i}`}>
+              <line
+                x1={tick.x}
+                y1={marginTop + plotHeight}
+                x2={tick.x}
+                y2={marginTop + plotHeight + 5}
+                stroke="rgba(255, 255, 255, 0.2)"
+              />
+              <text
+                x={tick.x}
+                y={marginTop + plotHeight + 20}
+                textAnchor="middle"
+                fill="var(--text-secondary)"
+                fontSize="10"
+                fontFamily="'Outfit', sans-serif"
+              >
+                {tick.dateStr}
+              </text>
+            </g>
+          ))}
+
+          {/* Axis border line */}
+          <line
+            x1={marginLeft}
+            y1={marginTop + plotHeight}
+            x2={svgWidth - marginRight}
+            y2={marginTop + plotHeight}
+            stroke="rgba(255, 255, 255, 0.15)"
+          />
+          <line
+            x1={marginLeft}
+            y1={marginTop}
+            x2={marginLeft}
+            y2={marginTop + plotHeight}
+            stroke="rgba(255, 255, 255, 0.15)"
+          />
+
+          {/* Gradient Area under curve */}
+          <path d={areaString} fill={`url(#${gradientId})`} />
+
+          {/* Trend Line */}
+          <path
+            d={linePath}
+            fill="none"
+            stroke={chartColor}
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+
+          {/* Interactive Hover Guides & Indicator */}
+          {hoveredIndex !== null && activePoint && (
+            <g className="hover-indicators">
+              <line
+                x1={activePoint.x}
+                y1={marginTop}
+                x2={activePoint.x}
+                y2={marginTop + plotHeight}
+                stroke="rgba(255, 255, 255, 0.35)"
+                strokeDasharray="3 3"
+              />
+              <line
+                x1={marginLeft}
+                y1={activePoint.y}
+                x2={svgWidth - marginRight}
+                y2={activePoint.y}
+                stroke="rgba(255, 255, 255, 0.25)"
+                strokeDasharray="3 3"
+              />
+              <circle
+                cx={activePoint.x}
+                cy={activePoint.y}
+                r="6"
+                fill={chartColor}
+                stroke="#ffffff"
+                strokeWidth="2"
+              />
+            </g>
+          )}
+        </svg>
       </div>
     );
   };
@@ -128,7 +348,7 @@ export default function TradingPanel({ onTradeSuccess, selectedSymbol, clearSele
   return (
     <div className="trading-panel card-glass">
       <h3>Trading Terminal</h3>
-      
+
       {!selectedSymbol && (
         <div className="search-box">
           <input
@@ -160,14 +380,17 @@ export default function TradingPanel({ onTradeSuccess, selectedSymbol, clearSele
 
       {selectedSymbol && stockDetails && (
         <div className="stock-info">
-          <button className="btn-secondary btn-back" onClick={() => {
-            clearSelectedSymbol(null);
-            setTradeMessage(null);
-            setTradeError(null);
-          }}>
+          <button
+            className="btn-secondary btn-back"
+            onClick={() => {
+              clearSelectedSymbol(null);
+              setTradeMessage(null);
+              setTradeError(null);
+            }}
+          >
             ← Back to Search
           </button>
-          
+
           <div className="info-header">
             <div>
               <h2 className="info-symbol">{stockDetails.name}</h2>
@@ -183,7 +406,7 @@ export default function TradingPanel({ onTradeSuccess, selectedSymbol, clearSele
 
           <div className="chart-container">
             <p className="chart-title">Daily Historical Trend (Last 30 Days)</p>
-            {renderSparkline()}
+            {renderInteractiveChart()}
           </div>
 
           <div className="trade-actions">

@@ -44,6 +44,7 @@ public class AppConstants {
 
     // Historical Data
     public static final int HISTORICAL_DATA_POINTS = 20;
+    public static final int HISTORICAL_DATA_DAYS = 30;
     public static final String DEFAULT_PRICE = "100.00";
 
     // Decimal Scales

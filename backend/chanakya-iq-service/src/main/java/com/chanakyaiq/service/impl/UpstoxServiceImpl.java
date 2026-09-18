@@ -32,6 +32,7 @@ import static com.chanakyaiq.constants.AppConstants.API_BASE_URL;
 import static com.chanakyaiq.constants.AppConstants.DEFAULT_PRICE;
 import static com.chanakyaiq.constants.AppConstants.EXCHANGE_NSE;
 import static com.chanakyaiq.constants.AppConstants.HISTORICAL_DATA_POINTS;
+import static com.chanakyaiq.constants.AppConstants.HISTORICAL_DATA_DAYS;
 import static com.chanakyaiq.constants.AppConstants.INSTRUMENT_SEARCH_ENDPOINT;
 import static com.chanakyaiq.constants.AppConstants.INSTRUMENT_TYPE_EQ;
 import static com.chanakyaiq.constants.AppConstants.MARKET_CLOSE_HOUR;
@@ -210,7 +211,7 @@ public class UpstoxServiceImpl implements UpstoxService {
 
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
         String toDateStr = LocalDate.now(ZoneId.of(TIMEZONE_IST)).format(formatter);
-        String fromDateStr = LocalDate.now(ZoneId.of(TIMEZONE_IST)).minusDays(30).format(formatter);
+        String fromDateStr = LocalDate.now(ZoneId.of(TIMEZONE_IST)).minusDays(HISTORICAL_DATA_DAYS).format(formatter);
 
         // Build URL: GET /v3/historical-candle/{instrumentKey}/days/1/{to_date}/{from_date}
         String url = API_BASE_URL_V3 + HISTORICAL_CANDLE_ENDPOINT + "/" + instrumentKey + "/"
@@ -220,20 +221,20 @@ public class UpstoxServiceImpl implements UpstoxService {
                 restClient, url, properties.getApi().getToken(), UpstoxHistoricalCandleResponse.class);
 
         if (response != null && STATUS_SUCCESS.equals(response.getStatus()) && response.getData() != null) {
-            List<List<Object>> candles = (List<List<Object>>) (Object) response.getData().getCandles();
+            List<List<Object>> candles = response.getData().getCandles();
             if (candles != null) {
                 log.info("Historical API returned {} candles for {}", candles.size(), instrumentKey);
                 // Map from oldest to newest for chart display
                 for (int i = candles.size() - 1; i >= 0; i--) {
                     List<Object> candle = candles.get(i);
-                    if (candle.size() >= 6) {
+                    if (candle != null && candle.size() >= 6) {
                         try {
                             String timestamp = String.valueOf(candle.get(0));
                             BigDecimal open = new BigDecimal(String.valueOf(candle.get(1)));
                             BigDecimal high = new BigDecimal(String.valueOf(candle.get(2)));
                             BigDecimal low = new BigDecimal(String.valueOf(candle.get(3)));
                             BigDecimal close = new BigDecimal(String.valueOf(candle.get(4)));
-                            Long volume = Double.valueOf(String.valueOf(candle.get(5))).longValue();
+                            Long volume = candle.get(5) != null ? Double.valueOf(String.valueOf(candle.get(5))).longValue() : 0L;
 
                             list.add(new StockCandleDTO(
                                     timestamp,
