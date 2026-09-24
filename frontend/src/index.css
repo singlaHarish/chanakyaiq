@@ -901,3 +901,66 @@ body {
   color: var(--neon-red);
 }
 
+/* WebSocket Status Styles */
+.websocket-status-banner {
+  background: linear-gradient(135deg, #ff9800, #f57c00);
+  color: white;
+  padding: 12px 20px;
+  text-align: center;
+  font-size: 14px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.websocket-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  padding: 4px 12px;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 12px;
+}
+
+.websocket-status .status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.websocket-status .status-dot.live {
+  background: #00e676;
+  animation: pulse 2s infinite;
+}
+
+.websocket-status .status-dot.degraded {
+  background: #ff9800;
+}
+
+.price-badge {
+  font-size: 9px;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 4px;
+  margin-left: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  vertical-align: middle;
+}
+
+.price-badge.live {
+  background: #00e676;
+  color: #000;
+  animation: pulse 2s infinite;
+}
+
+.price-badge.degraded {
+  background: #ff9800;
+  color: #000;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}

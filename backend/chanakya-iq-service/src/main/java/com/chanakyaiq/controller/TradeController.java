@@ -1,10 +1,5 @@
 package com.chanakyaiq.controller;
 
-import com.chanakyaiq.dto.TradeExecutionResponseDTO;
-import com.chanakyaiq.dto.TradeOrderRequestDTO;
-import com.chanakyaiq.service.api.TradeService;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.log4j.Log4j2;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -14,6 +9,14 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.chanakyaiq.dto.TradeExecutionResponseDTO;
+import com.chanakyaiq.dto.TradeOrderRequestDTO;
+import com.chanakyaiq.service.api.TradeService;
+import com.chanakyaiq.websocket.UpstoxWebSocketManager;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.log4j.Log4j2;
+
 @Log4j2
 @RestController
 @RequestMapping("/api/trade")
@@ -21,6 +24,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class TradeController {
 
     private final TradeService tradeService;
+    private final UpstoxWebSocketManager webSocketManager;
 
     @PostMapping("/buy")
     public ResponseEntity<TradeExecutionResponseDTO> buyStock(
@@ -35,6 +39,10 @@ public class TradeController {
         log.info("Processing BUY order for user {}: symbol={}, quantity={}", userId, request.symbol(), request.quantity());
         
         TradeExecutionResponseDTO response = tradeService.executeBuyOrder(userId, request.symbol(), request.quantity());
+        
+        // Subscribe to the new instrument for WebSocket updates
+        webSocketManager.subscribe(request.symbol());
+        
         return ResponseEntity.ok(response);
     }
 
@@ -51,6 +59,10 @@ public class TradeController {
         log.info("Processing SELL order for user {}: symbol={}, quantity={}", userId, request.symbol(), request.quantity());
 
         TradeExecutionResponseDTO response = tradeService.executeSellOrder(userId, request.symbol(), request.quantity());
+        
+        // Subscribe to the sold instrument for WebSocket updates (in case user still holds it)
+        webSocketManager.subscribe(request.symbol());
+        
         return ResponseEntity.ok(response);
     }
 }

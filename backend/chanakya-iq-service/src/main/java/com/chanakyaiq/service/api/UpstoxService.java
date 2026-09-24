@@ -46,4 +46,10 @@ public interface UpstoxService {
      * @return list of candles (oldest to newest)
      */
     List<com.chanakyaiq.dto.StockCandleDTO> getHistoricalPrices(String instrumentKey);
+    
+    /**
+     * Returns the RestClient for internal use.
+     * @return RestClient instance
+     */
+    org.springframework.web.client.RestClient getRestClient();
 }

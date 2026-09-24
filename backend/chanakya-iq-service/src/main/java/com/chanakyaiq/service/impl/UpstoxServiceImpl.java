@@ -256,4 +256,9 @@ public class UpstoxServiceImpl implements UpstoxService {
 
         return list;
     }
+
+    @Override
+    public org.springframework.web.client.RestClient getRestClient() {
+        return restClient;
+    }
 }

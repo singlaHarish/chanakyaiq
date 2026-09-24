@@ -4,9 +4,10 @@ import { Holding, formatSymbolKey } from '../types';
 interface HoldingsTableProps {
   holdings: Holding[];
   onSelectStock: (symbol: string) => void;
+  websocketStatus?: { connected: boolean; mode: 'LIVE' | 'FALLBACK_REST' };
 }
 
-export default function HoldingsTable({ holdings, onSelectStock }: HoldingsTableProps) {
+export default function HoldingsTable({ holdings, onSelectStock, websocketStatus }: HoldingsTableProps) {
   const activeHoldings = (holdings || []).filter((h) => h.quantity > 0);
 
   if (!activeHoldings || activeHoldings.length === 0) {
@@ -53,7 +54,12 @@ export default function HoldingsTable({ holdings, onSelectStock }: HoldingsTable
                 </td>
                 <td className="text-right font-mono">{h.quantity}</td>
                 <td className="text-right font-mono">₹{Number(avgPrice).toFixed(2)}</td>
-                <td className="text-right font-mono">₹{Number(curPrice).toFixed(2)}</td>
+                <td className="text-right font-mono">
+                  <span className="price-value">₹{Number(curPrice).toFixed(2)}</span>
+                  {websocketStatus?.connected && websocketStatus.mode === 'LIVE' && (
+                    <span className="price-badge live">LIVE</span>
+                  )}
+                </td>
                 <td className="text-right font-mono">₹{Number(invested).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
                 <td className="text-right font-mono">₹{Number(value).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
                 <td className={`text-right font-mono ${isProfit ? 'text-profit' : 'text-loss'}`}>
