@@ -29,6 +29,8 @@
 - **Database**: H2 (file-based persistence at `backend/db/chanakyaiq`)
 - **Security**: Spring Security with OAuth2
 - **Authentication**: Google OAuth2 (session-based with JSESSIONID cookie)
+- **WebSocket**: Java-WebSocket client for Upstox market data feed
+- **SSE**: Server-Sent Events for real-time price updates and WebSocket status broadcasts
 - **Logging**: Log4j2 (via `spring-boot-starter-log4j2`, default Spring Boot starter logging excluded)
 - **Web Client**: Spring `RestClient` powered by Apache `HttpClient5` with connection pooling
 - **ORM**: JPA/Hibernate
@@ -71,12 +73,14 @@ chanakyaiq/
 │   │   │   ├── ChanakyaIqApplication.java # Spring Boot entry point
 │   │   │   ├── config/                # Security, RestClientConfig, Properties
 │   │   │   ├── constants/             # Application constants
-│   │   │   ├── controller/            # REST controllers
+│   │   │   ├── controller/            # REST controllers (including SSE, WebSocket)
 │   │   │   ├── dto/                   # DTO records
 │   │   │   ├── model/                 # JPA database entities
 │   │   │   ├── repository/            # Repository interfaces
 │   │   │   ├── service/               # Services (api & impl)
-│   │   │   └── util/                  # Technical utilities (RestUtil)
+│   │   │   ├── util/                  # Technical utilities (RestUtil)
+│   │   │   └── websocket/             # WebSocket client for Upstox feed
+│   │   │   └── cache/                 # In-memory price cache
 │   │   ├── src/main/resources/
 │   │   │   └── application.properties # Application settings
 │   │   ├── db/                        # Local H2 database files
@@ -89,9 +93,10 @@ chanakyaiq/
 │   │   ├── components/
 │   │   │   ├── Dashboard.tsx        # Portfolio metrics summary
 │   │   │   ├── HoldingsTable.tsx    # Holdings list and P&L view
-│   │   │   ├── TradingPanel.tsx     # Buy/sell stock panel (2-step lookup)
-│   │   │   └── TransactionHistory.jsx # Historical transaction logger
-│   │   ├── App.tsx                  # Core React component
+│   │   │   ├── TradingPanel.tsx     # Buy/sell stock panel
+│   │   │   ├── TransactionHistory.jsx # Historical transaction logger
+│   │   │   └── WebSocketStatus.tsx  # WebSocket connection status indicator
+│   │   ├── App.tsx                  # Core React component with SSE handling
 │   │   └── index.css                # Glass-morphism global styling
 │   ├── package.json                 # Node dependencies
 │   └── vite.config.ts              # Vite configuration
@@ -107,6 +112,35 @@ chanakyaiq/
 3. **Utility Layer**: Helper components (e.g., `RestUtil` for REST call boilerplates) separating technical integrations from business rules.
 4. **Data Access Layer**: JPA repositories (`@Repository`).
 5. **Domain Layer**: Entity models (`@Entity`) and generated API models.
+
+---
+
+## Steering Files
+
+### `.kiro/steering/development-guidelines.md`
+
+**This file is automatically included in all Kiro interactions.**
+
+Contains critical guidelines for development workflow:
+
+- **Planning Before Implementation** - Never implement without approval
+- **Step-by-step process** - Analyze → Plan → Reason → Get approval
+- **When to ask questions** - 5 clear scenarios requiring clarification
+- **Examples** - Good vs bad implementation approaches
+
+**Key Rule:**
+```
+🚫 DO NOT IMPLEMENT WITHOUT APPROVAL
+
+When you receive a feature request, bug fix, or implementation task, you MUST follow this process:
+
+1. Analyze the request
+2. Make a plan
+3. Explain your reasoning
+4. Get explicit approval
+```
+
+See [.kiro/steering/development-guidelines.md](../.kiro/steering/development-guidelines.md) for full details.
 
 ---
 
@@ -141,7 +175,7 @@ chanakyaiq/
 
 ### 2. Portfolio Management
 - **Holdings**: Tracks user's stock positions (symbol, quantity, average price)
-- **Real-time Valuation**: Fetches current prices every 5 seconds (polling)
+- **Real-time Valuation**: Fetches current prices via WebSocket/SSE with polling fallback
 - **P&L Calculation**: 
   - Per-holding: `(currentPrice - avgPrice) * quantity`
   - Overall: `totalCurrentValue - totalInvested`
@@ -166,7 +200,9 @@ chanakyaiq/
 - **Market Hours**: Mon-Fri, 9:15 AM - 3:30 PM IST.
 - **Real-time Stock Search**: Calls Upstox API's `/instruments/search` endpoint to fetch matching stock tickers on user input, returning the instrument keys (e.g., `NSE_EQ|INE002A01018`).
 - **Live Quotes**: Calls Upstox API's `/market-quote/quotes` endpoint with the selected instrument key to retrieve live OHLC, last traded price, net changes, and trading volume.
-- **Historical Data**: Generates simulated historical sequences for charts based on the real-time last traded price.
+- **Historical Data**: Fetches real historical candles from Upstox API (30 days of 1-day candles) via `/v3/historical-candle/{instrumentKey}/days/1/{to_date}/{from_date}` endpoint.
+- **WebSocket Integration**: Real-time WebSocket feed from Upstox with automatic reconnection, subscription management, and REST API fallback when WebSocket unavailable. Auto-subscribes to user holdings on login.
+- **SSE Broadcasting**: Server-Sent Events for real-time price updates and WebSocket status broadcasts to all connected clients.
 
 ---
 
@@ -199,6 +235,23 @@ chanakyaiq/
   - Returns: `{ instrumentKey, symbol, name, lastPrice, netChange, changePercent, open, high, low, close, volume, averagePrice, isMarketOpen }`
 - `GET /api/stocks/history/{symbol}` - Get historical prices for charting (PUBLIC)
   - Returns: Array of `{ timestamp, open, high, low, close, volume }`
+
+### Server-Sent Events (SSE)
+- `GET /api/sse/connect` - Establish SSE connection for real-time updates (PUBLIC)
+  - Returns: Event stream with `connected`, `websocket_status`, `price_update` events
+- `POST /api/sse/disconnect` - Close SSE connection (PUBLIC)
+  - Body: `{ emitterId: string }`
+- `GET /api/sse/status` - Check SSE connection status (PUBLIC)
+  - Returns: `{ connected, activeConnections }`
+
+### WebSocket Management
+- `GET /api/websocket/status` - Check WebSocket connection status (PUBLIC)
+  - Returns: `{ connected, mode (LIVE|FALLBACK_REST), subscribedInstruments }`
+- `GET /api/websocket/prices` - Get all cached prices (PUBLIC)
+  - Returns: Map of instrumentKey -> stock details
+- `POST /api/websocket/subscribe` - Subscribe to instrument prices (PUBLIC)
+  - Body: `{ instrumentKeys: string[] }`
+- `GET /api/websocket/subscribe/{instrumentKey}` - Subscribe to single instrument (PUBLIC)
 
 ---
 
@@ -330,7 +383,9 @@ npm run build
 ### Protected Routes
 - All `/api/**` routes except:
   - `/api/auth/status` (PUBLIC)
-  - `/api/stocks/price/**` (PUBLIC)
+  - `/api/stocks/**` (PUBLIC)
+  - `/api/sse/**` (PUBLIC for SSE connections)
+  - `/api/websocket/**` (PUBLIC for WebSocket management)
   - `/h2-console/**` (PUBLIC for dev)
 
 ### Authentication
@@ -376,7 +431,7 @@ npm run build
 - **Market Hours**: Uses `ZonedDateTime` with IST timezone (Mon-Fri, 9:15 AM - 3:30 PM IST).
 - **Real Upstox Integration**: Connects to the Upstox API via Spring's `RestClient` and maps responses to OpenAPI models.
 - **2-Step Workflow**: Performs live stock searches to retrieve instrument keys, and then requests real-time quotes using those keys.
-- **Historical Simulation**: Generates historical charting price series on the fly using a random walk starting from the latest real quote price.
+- **Real Historical Data**: Fetches actual historical candles from Upstox API (30 days of 1-day candles), NOT simulated data.
 
 ---
 
@@ -400,11 +455,29 @@ npm run build
 3. **TradingPanel**: Stock search, interactive chart, buy/sell buttons with tooltips
 4. **TransactionHistory**: Chronological log with type badges (Order History)
 
-### Real-time Updates
-- Portfolio data polled every 5 seconds when user is authenticated
-- Stock details and prices refresh every 5 seconds for selected stock
-- Prices update automatically during market hours
-- UI reflects changes without page refresh
+### Real-time Updates (WebSocket + SSE + Polling Fallback)
+The application uses a hybrid real-time architecture:
+
+1. **WebSocket Connection** (`UpstoxWebSocketManager`):
+   - Connects to Upstox market data feed API for live prices
+   - Auto-subscribes to user's holdings on login
+   - Handles reconnection with exponential backoff (max 5 attempts)
+   - Falls back to REST API when WebSocket unavailable
+
+2. **Server-Sent Events (SSE)** (`SseController`):
+   - Real-time broadcast of price updates to all connected clients
+   - WebSocket connection status updates (LIVE vs FALLBACK_REST mode)
+   - 30-second timeout for SSE connections
+
+3. **Polling Fallback**:
+   - Portfolio data polled every 5 seconds when SSE/WebSocket unavailable
+   - Enabled automatically when SSE fails or WebSocket disconnects
+   - Disabled when WebSocket/SSE reconnected
+
+4. **Frontend Components**:
+   - `WebSocketStatus.tsx` shows connection status to users
+   - `App.tsx` manages SSE connection and polling intervals
+   - Real-time price updates reflected immediately in holdings
 
 ### TradingPanel Features
 - **Search**: Live search with debouncing (300ms), minimum 2 characters
@@ -473,14 +546,15 @@ cd backend
 ## Known Limitations & Future Enhancements
 
 ### Current Limitations
-1. **Real-time Price Simulation**: Real market quotes are fetched live from Upstox API, but historical charting data is simulated locally.
+1. **WebSocket Binary Data**: WebSocket feed is connected but binary Protobuf data parsing requires implementation for full real-time capability (currently falls back to REST API).
 2. **Single User Session**: No multi-session support per user.
 3. **No Order Types**: Only market orders (no limit/stop orders).
 4. **No Watchlist**: Can't save favorite stocks.
 5. **No Advanced Charts**: Basic historical line charts, no candlesticks.
+6. **WebSocket Reconnection Delay**: Max 5 reconnect attempts with exponential backoff before falling back to REST.
 
 ### Potential Enhancements
-- Real Upstox API history integration
+- Complete WebSocket Protobuf parsing for full real-time price updates
 - Advanced order types (limit, stop-loss, bracket)
 - Watchlist and alerts
 - Technical indicators (RSI, MACD, Moving Averages)
